@@ -4,6 +4,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { NotesModule } from './notes/notes.module';
 import { UsersService } from './users/users.service';
 import { AuthController } from './auth/auth.controller';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { AuthController } from './auth/auth.controller';
       limit: 30,
     }),
     NotesModule,
+    UsersModule,
   ],
   controllers: [AuthController],
   providers: [
