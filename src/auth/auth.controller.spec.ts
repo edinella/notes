@@ -6,9 +6,16 @@ describe('AuthController', () => {
   let controller: AuthController;
 
   beforeEach(async () => {
+    const AuthServiceProvider = {
+      provide: AuthService,
+      useFactory: () => ({
+        findByUsername: jest.fn(),
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
-      providers: [AuthService],
+      providers: [AuthServiceProvider],
     }).compile();
 
     controller = module.get<AuthController>(AuthController);
