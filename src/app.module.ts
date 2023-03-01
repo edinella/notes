@@ -3,8 +3,8 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { NotesModule } from './notes/notes.module';
 import { UsersService } from './users/users.service';
-import { AuthController } from './auth/auth.controller';
 import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -14,8 +14,9 @@ import { UsersModule } from './users/users.module';
     }),
     NotesModule,
     UsersModule,
+    AuthModule,
   ],
-  controllers: [AuthController],
+  controllers: [],
   providers: [
     {
       provide: APP_GUARD,
