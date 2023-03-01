@@ -1,3 +1,4 @@
+import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
@@ -5,19 +6,21 @@ import { AuthService } from './auth.service';
 
 describe('AuthService', () => {
   let service: AuthService;
-  const usersServiceMock: UsersService = {
-    findByUsername: jest.fn(),
-  };
+  let usersServiceMock;
+  let jwtServiceMock;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
-        { provide: UsersService, useValue: usersServiceMock },
+        { provide: UsersService, useValue: jest.fn() },
+        { provide: JwtService, useValue: jest.fn() },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
+    usersServiceMock = module.get<AuthService>(UsersService);
+    jwtServiceMock = module.get<AuthService>(JwtService);
   });
 
   it('should be defined', () => {
@@ -38,7 +41,7 @@ describe('AuthService', () => {
       expect(usersServiceMock.findByUsername).toHaveBeenCalledWith('usr');
     });
 
-    it('should throw error if password doesn`t match', async () => {
+    it('should throw error on wrong credentials', async () => {
       const user = { id: '', username: 'usr', passwordHash: 'hash' };
       const compare = jest
         .spyOn(bcrypt, 'compare')
@@ -49,6 +52,20 @@ describe('AuthService', () => {
       }).rejects.toThrowError('Bad credentials');
       expect(usersServiceMock.findByUsername).toHaveBeenCalledWith('usr');
       expect(compare).toHaveBeenCalledWith('pass', 'hash');
+    });
+
+    it('should return a new jwt Token on good credentials', async () => {
+      const user = { id: 'ID', username: 'usr', passwordHash: 'hash' };
+      const compare = jest
+        .spyOn(bcrypt, 'compare')
+        .mockImplementation(() => Promise.resolve(true));
+      usersServiceMock.findByUsername = jest.fn(() => Promise.resolve(user));
+      jwtServiceMock.sign = jest.fn().mockReturnValue('TOKEN');
+      const result = await service.login({ username: 'usr', password: 'pass' });
+      expect(usersServiceMock.findByUsername).toHaveBeenCalledWith('usr');
+      expect(compare).toHaveBeenCalledWith('pass', 'hash');
+      expect(jwtServiceMock.sign).toHaveBeenCalledWith({ sub: 'ID' });
+      expect(result.token).toBe('TOKEN');
     });
   });
 });
