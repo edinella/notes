@@ -5,6 +5,7 @@ import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
 
 describe('AuthService', () => {
+  jest.spyOn(bcrypt, 'compare');
   let service: AuthService;
   let usersServiceMock;
   let jwtServiceMock;
@@ -27,14 +28,10 @@ describe('AuthService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('AuthService', () => {
-    beforeAll(() => {
-      jest.spyOn(bcrypt, 'compare');
-    });
-
+  describe('login method', () => {
     it('should throw error if user not found', async () => {
-      const user = null;
-      usersServiceMock.findByUsername = jest.fn(() => user);
+      usersServiceMock.findByUsername = jest.fn(() => null);
+      jest.spyOn(bcrypt, 'compare');
       await expect(async () => {
         await service.login({ username: 'usr', password: '' });
       }).rejects.toThrowError('Bad credentials');
@@ -42,11 +39,12 @@ describe('AuthService', () => {
     });
 
     it('should throw error on wrong credentials', async () => {
-      const user = { id: '', username: 'usr', passwordHash: 'hash' };
       const compare = jest
         .spyOn(bcrypt, 'compare')
         .mockImplementation(() => Promise.resolve(false));
-      usersServiceMock.findByUsername = jest.fn(() => Promise.resolve(user));
+      usersServiceMock.findByUsername = jest.fn(() =>
+        Promise.resolve({ id: '', username: 'usr', passwordHash: 'hash' }),
+      );
       await expect(async () => {
         await service.login({ username: 'usr', password: 'pass' });
       }).rejects.toThrowError('Bad credentials');
@@ -55,16 +53,36 @@ describe('AuthService', () => {
     });
 
     it('should return a new jwt Token on good credentials', async () => {
-      const user = { id: 'ID', username: 'usr', passwordHash: 'hash' };
       const compare = jest
         .spyOn(bcrypt, 'compare')
         .mockImplementation(() => Promise.resolve(true));
-      usersServiceMock.findByUsername = jest.fn(() => Promise.resolve(user));
+      usersServiceMock.findByUsername = jest.fn(() =>
+        Promise.resolve({ id: 'ID', username: 'usr', passwordHash: 'hash' }),
+      );
       jwtServiceMock.sign = jest.fn().mockReturnValue('TOKEN');
       const result = await service.login({ username: 'usr', password: 'pass' });
       expect(usersServiceMock.findByUsername).toHaveBeenCalledWith('usr');
       expect(compare).toHaveBeenCalledWith('pass', 'hash');
       expect(jwtServiceMock.sign).toHaveBeenCalledWith({ sub: 'ID' });
+      expect(result.token).toBe('TOKEN');
+    });
+  });
+  describe('signup method', () => {
+    it('should create a new user through userService', async () => {
+      usersServiceMock.create = jest.fn(() =>
+        Promise.resolve({ id: 'ID', username: 'u', passwordHash: 'hash' }),
+      );
+      jwtServiceMock.sign = jest.fn();
+      const result = await service.signup({ username: 'u', password: 'p' });
+      expect(result.userId).toBe('ID');
+    });
+
+    it('should create a new jwt token', async () => {
+      usersServiceMock.create = jest.fn(() =>
+        Promise.resolve({ id: 'ID', username: 'u', passwordHash: 'hash' }),
+      );
+      jwtServiceMock.sign = jest.fn().mockReturnValue('TOKEN');
+      const result = await service.signup({ username: 'u', password: 'p' });
       expect(result.token).toBe('TOKEN');
     });
   });

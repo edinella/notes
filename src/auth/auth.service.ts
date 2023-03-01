@@ -14,11 +14,10 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  signup(signupRequestDto: SignupRequestDto): Promise<SignupResponseDto> {
-    const token = '';
-    const userId = '';
-    const response: SignupResponseDto = { token, userId };
-    return Promise.resolve(response);
+  async signup(payload: SignupRequestDto): Promise<SignupResponseDto> {
+    const user = await this.usersService.create(payload);
+    const token = this.jwtService.sign({ sub: user.id });
+    return { token, userId: user.id };
   }
 
   async login(payload: LoginRequestDto): Promise<LoginResponseDto> {
