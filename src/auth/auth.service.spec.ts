@@ -7,21 +7,25 @@ import { AuthService } from './auth.service';
 describe('AuthService', () => {
   jest.spyOn(bcrypt, 'compare');
   let service: AuthService;
-  let usersServiceMock;
-  let jwtServiceMock;
+  const usersServiceMock = {
+    findByUsername: jest.fn(),
+    create: jest.fn(),
+  };
+  const jwtServiceMock = {
+    sign: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AuthService,
-        { provide: UsersService, useValue: jest.fn() },
-        { provide: JwtService, useValue: jest.fn() },
-      ],
-    }).compile();
+      providers: [AuthService, UsersService, JwtService],
+    })
+      .overrideProvider(UsersService)
+      .useValue(usersServiceMock)
+      .overrideProvider(JwtService)
+      .useValue(jwtServiceMock)
+      .compile();
 
     service = module.get<AuthService>(AuthService);
-    usersServiceMock = module.get<AuthService>(UsersService);
-    jwtServiceMock = module.get<AuthService>(JwtService);
   });
 
   it('should be defined', () => {
@@ -67,6 +71,7 @@ describe('AuthService', () => {
       expect(result.token).toBe('TOKEN');
     });
   });
+
   describe('signup method', () => {
     it('should create a new user through userService', async () => {
       usersServiceMock.create = jest.fn(() =>

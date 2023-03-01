@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { SignupRequestDto } from 'src/auth/dto/signup-request.dto';
+import { SignupRequestDto } from '../auth/dto/signup-request.dto';
 import { User } from './entities/user.entity';
 
 @Injectable()
