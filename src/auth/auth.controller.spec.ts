@@ -34,11 +34,12 @@ describe('AuthController', () => {
 
   describe('login', () => {
     it('should return the user object', async () => {
-      const expectedUser = { username: 'user123' };
-      const req = { user: expectedUser };
-      const result = await authController.login(req);
-
-      expect(result).toBe(expectedUser);
+      const req = { user: { username: 'usr' } };
+      const result = await authController.login(req, {
+        username: 'usr',
+        password: 'x',
+      });
+      expect(result.username).toBe('usr');
     });
   });
 });
