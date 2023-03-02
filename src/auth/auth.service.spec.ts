@@ -9,35 +9,31 @@ import * as bcrypt from 'bcrypt';
 describe('AuthService', () => {
   let authService: AuthService;
   let usersService: UsersService;
-  let jwtService: JwtService;
+  const jwtServiceMock = { sign: jest.fn(() => 'MOCKED_TOKEN') };
 
   beforeEach(async () => {
-    const JwtServiceProvider = {
-      provide: JwtService,
-      useValue: {
-        sign: jest.fn(() => 'fakeToken'),
-      },
-    };
     const moduleRef = await Test.createTestingModule({
-      providers: [AuthService, UsersService, JwtServiceProvider],
-    }).compile();
+      providers: [AuthService, UsersService, JwtService],
+    })
+      .overrideProvider(JwtService)
+      .useValue(jwtServiceMock)
+      .compile();
 
     authService = moduleRef.get<AuthService>(AuthService);
     usersService = moduleRef.get<UsersService>(UsersService);
-    jwtService = moduleRef.get<JwtService>(JwtService);
   });
 
   describe('signup', () => {
     it('should create a user and return token and userId', async () => {
       jest
         .spyOn(usersService, 'create')
-        .mockResolvedValue({ id: '1', username: '', passwordHash: '' });
+        .mockResolvedValue({ id: '1', username: 'usr', passwordHash: 'x' });
       const response: SignupResponseDto = await authService.signup({
-        username: 'testUser',
-        password: 'password',
+        username: 'usr',
+        password: 'pass',
       });
-      expect(response.token).toEqual('fakeToken');
-      expect(response.userId).toEqual('1');
+      expect(response.id).toEqual('1');
+      expect(response.username).toEqual('usr');
     });
   });
 
@@ -78,7 +74,7 @@ describe('AuthService', () => {
   describe('login', () => {
     it('should return a token', async () => {
       const response: LoginResponseDto = await authService.login({ id: 1 });
-      expect(response.token).toEqual('fakeToken');
+      expect(response.token).toEqual('MOCKED_TOKEN');
     });
   });
 });

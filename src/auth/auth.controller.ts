@@ -7,10 +7,10 @@ import {
   Request,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { SignupRequestDto } from './dto/signup-request.dto';
-import { LoginRequestDto } from './dto/login-request.dto';
-import { SignupResponseDto } from './dto/signup-response.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
+import { SignupRequestDto } from './dto/signup-request.dto';
+import { SignupResponseDto } from './dto/signup-response.dto';
+import { LoginRequestDto } from './dto/login-request.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 
 @Controller('auth')
@@ -31,6 +31,6 @@ export class AuthController {
     @Request() req,
     @Body() loginRequestDto: LoginRequestDto,
   ): Promise<LoginResponseDto> {
-    return req.user;
+    return this.authService.login(req.user);
   }
 }

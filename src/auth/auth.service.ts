@@ -14,9 +14,8 @@ export class AuthService {
   ) {}
 
   async signup(payload: SignupRequestDto): Promise<SignupResponseDto> {
-    const user = await this.usersService.create(payload);
-    const token = this.jwtService.sign({ sub: user.id });
-    return { token, userId: user.id };
+    const { passwordHash, ...result } = await this.usersService.create(payload);
+    return result;
   }
 
   async validateUser(username: string, password: string): Promise<any> {

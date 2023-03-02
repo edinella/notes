@@ -2,8 +2,8 @@ import { IsNotEmpty } from 'class-validator';
 
 export class SignupResponseDto {
   @IsNotEmpty()
-  token: string;
+  id: string;
 
   @IsNotEmpty()
-  userId: string;
+  username: string;
 }

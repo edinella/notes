@@ -6,40 +6,39 @@ import { AuthService } from './auth.service';
 
 describe('AuthController', () => {
   let authController: AuthController;
-  let authService: AuthService;
+  const jwtServiceMock = { sign: jest.fn(() => 'MOCKED_TOKEN') };
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [AuthService, UsersService, JwtService],
-    }).compile();
+    })
+      .overrideProvider(JwtService)
+      .useValue(jwtServiceMock)
+      .compile();
 
-    authService = moduleRef.get<AuthService>(AuthService);
     authController = moduleRef.get<AuthController>(AuthController);
   });
 
   describe('signup', () => {
-    it('should return a SignupResponseDto', async () => {
-      jest
-        .spyOn(authService, 'signup')
-        .mockImplementation(async () => ({ userId: '1', token: 'TOKEN' }));
+    it('should return id and username', async () => {
       const result = await authController.signup({
         username: 'user',
         password: 'pwd',
       });
-      expect(result.userId).toBe('1');
-      expect(result.token).toBe('TOKEN');
+      expect(result.id).toBe('0');
+      expect(result.username).toBe('user');
     });
   });
 
   describe('login', () => {
-    it('should return the user object', async () => {
+    it('should return token', async () => {
       const req = { user: { username: 'usr' } };
       const result = await authController.login(req, {
         username: 'usr',
         password: 'x',
       });
-      expect(result.username).toBe('usr');
+      expect(result.token).toBe('MOCKED_TOKEN');
     });
   });
 });

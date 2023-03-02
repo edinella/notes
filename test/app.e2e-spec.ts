@@ -21,22 +21,22 @@ describe('AppController (e2e)', () => {
   });
 
   describe('/api/auth/signup (POST)', () => {
-    it('should create user and token', async () => {
+    it('should create and return user (except passwordHash)', async () => {
       return await request(app.getHttpServer())
         .post('/auth/signup')
         .send({ username: 'user', password: 'pwd' })
         .expect(201)
-        .expect({ token: 'MOCKED_TOKEN', userId: '0' });
+        .expect({ id: '0', username: 'user' });
     });
   });
 
   describe('/api/auth/login (POST)', () => {
-    it('should create user and token', () => {
+    it('should create and return token', () => {
       return request(app.getHttpServer())
         .post('/auth/login')
         .send({ username: 'user', password: 'pwd' })
         .expect(200)
-        .expect({ id: '0', username: 'user' });
+        .expect({ token: 'MOCKED_TOKEN' });
     });
   });
 
