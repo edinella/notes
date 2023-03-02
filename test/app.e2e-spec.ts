@@ -42,7 +42,7 @@ describe('AppController (e2e)', () => {
   });
 
   describe('/api/auth/signup (POST)', () => {
-    it('should create and return user (except passwordHash)', async () => {
+    it('should return create and return new user', async () => {
       const payload = { username: 'user', password: 'pwd' };
       const created = { id: '6400fa303a19d358d3c63db4', username: 'user' };
       userModelMock.create.mockImplementationOnce(() => created);
@@ -51,10 +51,32 @@ describe('AppController (e2e)', () => {
 
       result.expect(201).expect(created);
     });
+
+    it('should throw exception if username is taken', async () => {
+      const payload = { username: 'user', password: 'pwd' };
+      userModelMock.create.mockImplementationOnce(() =>
+        Promise.reject({ code: 11000 }),
+      );
+
+      const result = request(server).post('/auth/signup').send(payload);
+
+      result.expect(400);
+    });
+
+    it('should throw exception if error occurred while saving new user', async () => {
+      const payload = { username: 'user', password: 'pwd' };
+      userModelMock.create.mockImplementationOnce(() =>
+        Promise.reject(new Error()),
+      );
+
+      const result = request(server).post('/auth/signup').send(payload);
+
+      result.expect(500);
+    });
   });
 
   describe('/api/auth/login (POST)', () => {
-    it('should create and return token', () => {
+    it('should create and return token for good credentials', () => {
       const payload = { username: 'user', password: 'pwd' };
       const mockedToken = 'MOCKED_TOKEN';
       const expected = { token: mockedToken };
