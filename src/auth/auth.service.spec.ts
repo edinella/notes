@@ -2,79 +2,109 @@ import { Test } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
-import { SignupResponseDto } from './dto/signup-response.dto';
-import { LoginResponseDto } from './dto/login-response.dto';
 import * as bcrypt from 'bcrypt';
 
 describe('AuthService', () => {
   let authService: AuthService;
-  let usersService: UsersService;
-  const jwtServiceMock = { sign: jest.fn(() => 'MOCKED_TOKEN') };
+
+  const jwtServiceMock = {
+    sign: jest.fn(),
+  };
+  const usersServiceMock = {
+    create: jest.fn(),
+    findByUsername: jest.fn(),
+  };
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
-      providers: [AuthService, UsersService, JwtService],
-    })
-      .overrideProvider(JwtService)
-      .useValue(jwtServiceMock)
-      .compile();
+      providers: [
+        AuthService,
+        {
+          provide: UsersService,
+          useValue: usersServiceMock,
+        },
+        {
+          provide: JwtService,
+          useValue: jwtServiceMock,
+        },
+      ],
+    }).compile();
 
     authService = moduleRef.get<AuthService>(AuthService);
-    usersService = moduleRef.get<UsersService>(UsersService);
   });
 
   describe('signup', () => {
     it('should create a user and return token and userId', async () => {
-      jest
-        .spyOn(usersService, 'create')
-        .mockResolvedValue({ id: '1', username: 'usr', passwordHash: 'x' });
-      const response: SignupResponseDto = await authService.signup({
+      const mockRequest = {
         username: 'usr',
         password: 'pass',
-      });
-      expect(response.id).toEqual('1');
-      expect(response.username).toEqual('usr');
+      };
+      const mockResult = {
+        id: '6400fa303a19d358d3c63db4',
+        username: 'usr',
+        passwordHash: 'x',
+      };
+      usersServiceMock.create.mockImplementationOnce(async () => mockResult);
+
+      const response = await authService.signup(mockRequest);
+
+      expect(response.id).toEqual(mockResult.id);
+      expect(response.username).toEqual(mockResult.username);
     });
   });
 
   describe('validateUser', () => {
     it('should return user id & username for good credentials', async () => {
-      jest.spyOn(usersService, 'findByUsername').mockResolvedValue({
-        id: '1',
+      const user = {
+        _id: '6400fa303a19d358d3c63db4',
         username: 'testUser',
         passwordHash: 'hashedPassword',
-      });
-      jest
-        .spyOn(bcrypt, 'compare')
-        .mockImplementation(() => Promise.resolve(true));
+      };
+      const expectedResult = {
+        id: user._id,
+        username: user.username,
+      };
+
+      usersServiceMock.findByUsername.mockImplementationOnce(async () => user);
+      jest.spyOn(bcrypt, 'compare').mockImplementation(async () => true);
+
       const response = await authService.validateUser('testUser', 'password');
-      expect(response).toEqual({ id: '1', username: 'testUser' });
+
+      expect(response).toEqual(expectedResult);
     });
 
     it('should return null if the username is invalid', async () => {
-      jest.spyOn(usersService, 'findByUsername').mockResolvedValue(null);
+      usersServiceMock.findByUsername.mockImplementationOnce(async () => null);
+
       const response = await authService.validateUser('invalidUsr', 'pwd');
+
       expect(response).toBeNull();
     });
 
     it('should return null if the password is invalid', async () => {
-      jest.spyOn(usersService, 'findByUsername').mockResolvedValue({
-        id: '1',
+      const user = {
+        id: '6400fa303a19d358d3c63db4',
         username: 'testUser',
-        passwordHash: 'hashedPwd',
-      });
-      jest
-        .spyOn(bcrypt, 'compare')
-        .mockImplementation(() => Promise.resolve(false));
+        passwordHash: 'hashedPassword',
+      };
+      usersServiceMock.findByUsername.mockImplementationOnce(async () => user);
+      jest.spyOn(bcrypt, 'compare').mockImplementation(async () => false);
+
       const response = await authService.validateUser('testUser', 'invalidPwd');
+
       expect(response).toBeNull();
     });
   });
 
   describe('login', () => {
     it('should return a token', async () => {
-      const response: LoginResponseDto = await authService.login({ id: 1 });
-      expect(response.token).toEqual('MOCKED_TOKEN');
+      const user = { id: '6400fa303a19d358d3c63db4' };
+      const mockedToken = 'MOCKED_TOKEN';
+      jwtServiceMock.sign.mockImplementationOnce(() => mockedToken);
+
+      const response = await authService.login(user);
+
+      expect(response).toEqual(mockedToken);
     });
   });
 });

@@ -18,19 +18,21 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('signup')
-  signup(
+  async signup(
     @Body() signupRequestDto: SignupRequestDto,
   ): Promise<SignupResponseDto> {
-    return this.authService.signup(signupRequestDto);
+    const { id, username } = await this.authService.signup(signupRequestDto);
+    return { id, username };
   }
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
   @HttpCode(200)
-  async login(
+  login(
     @Request() req,
     @Body() loginRequestDto: LoginRequestDto,
-  ): Promise<LoginResponseDto> {
-    return this.authService.login(req.user);
+  ): LoginResponseDto {
+    const token = this.authService.login(req.user);
+    return { token };
   }
 }

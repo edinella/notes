@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
 import { NotesModule } from './notes/notes.module';
 import { UsersService } from './users/users.service';
 import { UsersModule } from './users/users.module';
@@ -13,6 +14,13 @@ const ThrottlerProvider = { provide: APP_GUARD, useClass: ThrottlerGuard };
   imports: [
     ConfigModule.forRoot(),
     ThrottlerModule.forRoot({ ttl: 60, limit: 30 }),
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('DB_URL'),
+      }),
+      inject: [ConfigService],
+    }),
     NotesModule,
     UsersModule,
     AuthModule,

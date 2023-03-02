@@ -1,27 +1,32 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
+import { Model } from 'mongoose';
+import { User, UserDocument } from './schemas/user.schema';
 import { SignupRequestDto } from '../auth/dto/signup-request.dto';
-import { User } from './entities/user.entity';
-
-const collectionMock: User[] = [];
 
 @Injectable()
 export class UsersService {
-  findByUsername(username: string): Promise<User> {
-    return Promise.resolve(
-      collectionMock.find((user) => user.username == username) || null,
-    );
+  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+
+  findByUsername(username: string): Promise<UserDocument> {
+    return this.userModel.findOne({ username }).exec();
   }
 
-  async create(payload: SignupRequestDto): Promise<User> {
+  async create(payload: SignupRequestDto): Promise<UserDocument> {
     const { username, password } = payload;
-    if (await this.findByUsername(username)) {
-      throw new BadRequestException('Username is taken');
-    }
     const passwordHash = await bcrypt.hash(password, 10);
-    const id = collectionMock.length.toString();
-    const user = { id, username, passwordHash };
-    collectionMock.push(user);
-    return Promise.resolve(user);
+    return this.userModel.create({ username, passwordHash }).catch((err) => {
+      if (err.code === 11000) {
+        throw new BadRequestException('Username is taken');
+      }
+      throw new InternalServerErrorException('Error saving new user', {
+        cause: err,
+      });
+    });
   }
 }
