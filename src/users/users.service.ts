@@ -1,6 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { randomUUID } from 'crypto';
 import { SignupRequestDto } from '../auth/dto/signup-request.dto';
 import { User } from './entities/user.entity';
 
@@ -20,7 +19,7 @@ export class UsersService {
       throw new BadRequestException('Username is taken');
     }
     const passwordHash = await bcrypt.hash(password, 10);
-    const id = randomUUID();
+    const id = collectionMock.length.toString();
     const user = { id, username, passwordHash };
     collectionMock.push(user);
     return Promise.resolve(user);

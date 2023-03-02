@@ -12,17 +12,14 @@ describe('AuthService', () => {
   let jwtService: JwtService;
 
   beforeEach(async () => {
+    const JwtServiceProvider = {
+      provide: JwtService,
+      useValue: {
+        sign: jest.fn(() => 'fakeToken'),
+      },
+    };
     const moduleRef = await Test.createTestingModule({
-      providers: [
-        AuthService,
-        UsersService,
-        {
-          provide: JwtService,
-          useValue: {
-            sign: jest.fn(() => 'fakeToken'),
-          },
-        },
-      ],
+      providers: [AuthService, UsersService, JwtServiceProvider],
     }).compile();
 
     authService = moduleRef.get<AuthService>(AuthService);
