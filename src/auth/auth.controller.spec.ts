@@ -1,27 +1,44 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { JwtService } from '@nestjs/jwt';
+import { Test } from '@nestjs/testing';
+import { UsersService } from '../users/users.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 
 describe('AuthController', () => {
-  let controller: AuthController;
+  let authController: AuthController;
+  let authService: AuthService;
 
   beforeEach(async () => {
-    const AuthServiceProvider = {
-      provide: AuthService,
-      useFactory: () => ({
-        findByUsername: jest.fn(),
-      }),
-    };
-
-    const module: TestingModule = await Test.createTestingModule({
+    const moduleRef = await Test.createTestingModule({
       controllers: [AuthController],
-      providers: [AuthServiceProvider],
+      providers: [AuthService, UsersService, JwtService],
     }).compile();
 
-    controller = module.get<AuthController>(AuthController);
+    authService = moduleRef.get<AuthService>(AuthService);
+    authController = moduleRef.get<AuthController>(AuthController);
   });
 
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
+  describe('signup', () => {
+    it('should return a SignupResponseDto', async () => {
+      jest
+        .spyOn(authService, 'signup')
+        .mockImplementation(async () => ({ userId: '1', token: 'TOKEN' }));
+      const result = await authController.signup({
+        username: 'user',
+        password: 'pwd',
+      });
+      expect(result.userId).toBe('1');
+      expect(result.token).toBe('TOKEN');
+    });
+  });
+
+  describe('login', () => {
+    it('should return the user object', async () => {
+      const expectedUser = { username: 'user123' };
+      const req = { user: expectedUser };
+      const result = await authController.login(req);
+
+      expect(result).toBe(expectedUser);
+    });
   });
 });

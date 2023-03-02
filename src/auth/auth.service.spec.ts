@@ -1,94 +1,87 @@
-import { JwtService } from '@nestjs/jwt';
-import { Test, TestingModule } from '@nestjs/testing';
-import * as bcrypt from 'bcrypt';
-import { UsersService } from '../users/users.service';
+import { Test } from '@nestjs/testing';
 import { AuthService } from './auth.service';
+import { UsersService } from '../users/users.service';
+import { JwtService } from '@nestjs/jwt';
+import { SignupResponseDto } from './dto/signup-response.dto';
+import { LoginResponseDto } from './dto/login-response.dto';
+import * as bcrypt from 'bcrypt';
 
 describe('AuthService', () => {
-  jest.spyOn(bcrypt, 'compare');
-  let service: AuthService;
-  const usersServiceMock = {
-    findByUsername: jest.fn(),
-    create: jest.fn(),
-  };
-  const jwtServiceMock = {
-    sign: jest.fn(),
-  };
+  let authService: AuthService;
+  let usersService: UsersService;
+  let jwtService: JwtService;
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [AuthService, UsersService, JwtService],
-    })
-      .overrideProvider(UsersService)
-      .useValue(usersServiceMock)
-      .overrideProvider(JwtService)
-      .useValue(jwtServiceMock)
-      .compile();
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        AuthService,
+        UsersService,
+        {
+          provide: JwtService,
+          useValue: {
+            sign: jest.fn(() => 'fakeToken'),
+          },
+        },
+      ],
+    }).compile();
 
-    service = module.get<AuthService>(AuthService);
+    authService = moduleRef.get<AuthService>(AuthService);
+    usersService = moduleRef.get<UsersService>(UsersService);
+    jwtService = moduleRef.get<JwtService>(JwtService);
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+  describe('signup', () => {
+    it('should create a user and return token and userId', async () => {
+      jest
+        .spyOn(usersService, 'create')
+        .mockResolvedValue({ id: '1', username: '', passwordHash: '' });
+      const response: SignupResponseDto = await authService.signup({
+        username: 'testUser',
+        password: 'password',
+      });
+      expect(response.token).toEqual('fakeToken');
+      expect(response.userId).toEqual('1');
+    });
   });
 
-  describe('login method', () => {
-    it('should throw error if user not found', async () => {
-      usersServiceMock.findByUsername = jest.fn(() => null);
-      jest.spyOn(bcrypt, 'compare');
-      await expect(async () => {
-        await service.login({ username: 'usr', password: '' });
-      }).rejects.toThrowError('Bad credentials');
-      expect(usersServiceMock.findByUsername).toHaveBeenCalledWith('usr');
-    });
-
-    it('should throw error on wrong credentials', async () => {
-      const compare = jest
-        .spyOn(bcrypt, 'compare')
-        .mockImplementation(() => Promise.resolve(false));
-      usersServiceMock.findByUsername = jest.fn(() =>
-        Promise.resolve({ id: '', username: 'usr', passwordHash: 'hash' }),
-      );
-      await expect(async () => {
-        await service.login({ username: 'usr', password: 'pass' });
-      }).rejects.toThrowError('Bad credentials');
-      expect(usersServiceMock.findByUsername).toHaveBeenCalledWith('usr');
-      expect(compare).toHaveBeenCalledWith('pass', 'hash');
-    });
-
-    it('should return a new jwt Token on good credentials', async () => {
-      const compare = jest
+  describe('validateUser', () => {
+    it('should return user id & username for good credentials', async () => {
+      jest.spyOn(usersService, 'findByUsername').mockResolvedValue({
+        id: '1',
+        username: 'testUser',
+        passwordHash: 'hashedPassword',
+      });
+      jest
         .spyOn(bcrypt, 'compare')
         .mockImplementation(() => Promise.resolve(true));
-      usersServiceMock.findByUsername = jest.fn(() =>
-        Promise.resolve({ id: 'ID', username: 'usr', passwordHash: 'hash' }),
-      );
-      jwtServiceMock.sign = jest.fn().mockReturnValue('TOKEN');
-      const result = await service.login({ username: 'usr', password: 'pass' });
-      expect(usersServiceMock.findByUsername).toHaveBeenCalledWith('usr');
-      expect(compare).toHaveBeenCalledWith('pass', 'hash');
-      expect(jwtServiceMock.sign).toHaveBeenCalledWith({ sub: 'ID' });
-      expect(result.token).toBe('TOKEN');
+      const response = await authService.validateUser('testUser', 'password');
+      expect(response).toEqual({ id: '1', username: 'testUser' });
+    });
+
+    it('should return null if the username is invalid', async () => {
+      jest.spyOn(usersService, 'findByUsername').mockResolvedValue(null);
+      const response = await authService.validateUser('invalidUsr', 'pwd');
+      expect(response).toBeNull();
+    });
+
+    it('should return null if the password is invalid', async () => {
+      jest.spyOn(usersService, 'findByUsername').mockResolvedValue({
+        id: '1',
+        username: 'testUser',
+        passwordHash: 'hashedPwd',
+      });
+      jest
+        .spyOn(bcrypt, 'compare')
+        .mockImplementation(() => Promise.resolve(false));
+      const response = await authService.validateUser('testUser', 'invalidPwd');
+      expect(response).toBeNull();
     });
   });
 
-  describe('signup method', () => {
-    it('should create a new user through userService', async () => {
-      usersServiceMock.create = jest.fn(() =>
-        Promise.resolve({ id: 'ID', username: 'u', passwordHash: 'hash' }),
-      );
-      jwtServiceMock.sign = jest.fn();
-      const result = await service.signup({ username: 'u', password: 'p' });
-      expect(result.userId).toBe('ID');
-    });
-
-    it('should create a new jwt token', async () => {
-      usersServiceMock.create = jest.fn(() =>
-        Promise.resolve({ id: 'ID', username: 'u', passwordHash: 'hash' }),
-      );
-      jwtServiceMock.sign = jest.fn().mockReturnValue('TOKEN');
-      const result = await service.signup({ username: 'u', password: 'p' });
-      expect(result.token).toBe('TOKEN');
+  describe('login', () => {
+    it('should return a token', async () => {
+      const response: LoginResponseDto = await authService.login({ id: 1 });
+      expect(response.token).toEqual('fakeToken');
     });
   });
 });

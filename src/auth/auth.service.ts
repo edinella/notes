@@ -1,9 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { SignupRequestDto } from './dto/signup-request.dto';
 import { SignupResponseDto } from './dto/signup-response.dto';
-import { LoginRequestDto } from './dto/login-request.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { UsersService } from '../users/users.service';
 
@@ -20,15 +19,19 @@ export class AuthService {
     return { token, userId: user.id };
   }
 
-  async login(payload: LoginRequestDto): Promise<LoginResponseDto> {
-    const user = await this.usersService.findByUsername(payload.username);
-    if (user === null) {
-      throw new BadRequestException('Bad credentials');
+  async validateUser(username: string, password: string): Promise<any> {
+    const user = await this.usersService.findByUsername(username);
+    if (!user) {
+      return null;
     }
-    const isMatch = await bcrypt.compare(payload.password, user.passwordHash);
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
-      throw new BadRequestException('Bad credentials');
+      return null;
     }
+    return { id: user.id, username };
+  }
+
+  async login(user: any): Promise<LoginResponseDto> {
     const token = this.jwtService.sign({ sub: user.id });
     return Promise.resolve({ token });
   }
