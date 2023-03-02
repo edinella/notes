@@ -1,10 +1,10 @@
-import { Test } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import { JwtService } from '@nestjs/jwt';
 import { AppModule } from './../src/app.module';
 import { AuthModule } from './../src/auth/auth.module';
 import { UsersModule } from './../src/users/users.module';
-import { JwtService } from '@nestjs/jwt';
 import { UsersService } from './../src/users/users.service';
 
 describe('AppController (e2e)', () => {
@@ -13,21 +13,38 @@ describe('AppController (e2e)', () => {
     findByUsername: jest.fn(),
     create: jest.fn(),
   };
+  const jwtServiceMock = {
+    sign: jest.fn(),
+  };
 
   beforeEach(async () => {
-    const moduleRef = await Test.createTestingModule({
-      providers: [AppModule, AuthModule, UsersModule, JwtService, UsersService],
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+      providers: [AuthModule, UsersModule, JwtService, UsersService],
     })
       .overrideProvider(UsersService)
       .useValue(usersServiceMock)
+      .overrideProvider(JwtService)
+      .useValue(jwtServiceMock)
       .compile();
 
-    app = moduleRef.createNestApplication();
+    app = moduleFixture.createNestApplication();
     await app.init();
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer()).get('/').expect(404);
+  describe('/api/auth/signup (POST)', () => {
+    it('should create user and token', () => {
+      usersServiceMock.create = jest.fn(() => ({
+        id: 'test',
+        token: 'TOKEN',
+        passwordHash: 'secret',
+      }));
+      jwtServiceMock.sign = jest.fn().mockReturnValue('TOKEN');
+      return request(app.getHttpServer())
+        .post('/auth/signup')
+        .expect(201)
+        .expect({ token: 'TOKEN', userId: 'test' });
+    });
   });
 
   afterAll(async () => {
