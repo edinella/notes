@@ -1,15 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { HttpStatus } from '@nestjs/common/enums/http-status.enum';
 import * as request from 'supertest';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { AppModule } from './../src/app.module';
 import { getModelToken } from '@nestjs/mongoose';
 import { User } from './../src/users/schemas/user.schema';
+import { JwtAuthGuard } from '../src/auth/guards/jwt-auth.guard';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
-  let server;
 
   const userModelMock = {
     findOne: jest.fn(),
@@ -17,6 +18,9 @@ describe('AppController (e2e)', () => {
   };
   const jwtServiceMock = {
     sign: jest.fn(),
+  };
+  const mockJwtAuthGuard = {
+    canActivate: jest.fn(),
   };
 
   beforeAll(async () => {
@@ -27,14 +31,17 @@ describe('AppController (e2e)', () => {
       .useValue(userModelMock)
       .overrideProvider(JwtService)
       .useValue(jwtServiceMock)
+      .overrideGuard(JwtAuthGuard)
+      .useValue(mockJwtAuthGuard)
       .compile();
 
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(new ValidationPipe());
     await app.init();
   });
 
-  beforeEach(() => {
-    server = app.getHttpServer();
+  afterAll(async () => {
+    await app.close();
   });
 
   describe('/api/auth/signup (POST)', () => {
@@ -45,10 +52,10 @@ describe('AppController (e2e)', () => {
       userModelMock.create.mockImplementation(async () => created);
       jest.spyOn(bcrypt, 'hash').mockImplementation(async () => hashedPwd);
 
-      await request(server)
+      await request(app.getHttpServer())
         .post('/auth/signup')
         .send(payload)
-        .expect(201)
+        .expect(HttpStatus.CREATED)
         .expect(created);
 
       expect(bcrypt.hash).toHaveBeenCalledWith(payload.password, 10);
@@ -64,7 +71,10 @@ describe('AppController (e2e)', () => {
         Promise.reject({ code: 11000 }),
       );
 
-      return request(server).post('/auth/signup').send(payload).expect(400);
+      return request(app.getHttpServer())
+        .post('/auth/signup')
+        .send(payload)
+        .expect(400);
     });
 
     it('should throw exception if error occurred while saving new user', () => {
@@ -73,7 +83,10 @@ describe('AppController (e2e)', () => {
         Promise.reject(new Error()),
       );
 
-      return request(server).post('/auth/signup').send(payload).expect(500);
+      return request(app.getHttpServer())
+        .post('/auth/signup')
+        .send(payload)
+        .expect(500);
     });
   });
 
@@ -83,13 +96,13 @@ describe('AppController (e2e)', () => {
       const user = { username: 'user', passwordHash: 'xxx' };
       const mockedToken = 'MOCKED_TOKEN';
       jwtServiceMock.sign.mockImplementation(() => mockedToken);
-      userModelMock.findOne.mockReturnValueOnce({ exec: async () => user });
+      userModelMock.findOne.mockReturnValue({ exec: async () => user });
       jest.spyOn(bcrypt, 'compare').mockImplementation(async () => true);
 
-      await request(server)
+      await request(app.getHttpServer())
         .post('/auth/login')
         .send(payload)
-        .expect(200)
+        .expect(HttpStatus.OK)
         .expect({ token: mockedToken });
 
       expect(userModelMock.findOne).toBeCalledWith({
@@ -102,10 +115,14 @@ describe('AppController (e2e)', () => {
       const user = null;
       const mockedToken = 'MOCKED_TOKEN';
       jwtServiceMock.sign.mockImplementation(() => mockedToken);
-      userModelMock.findOne.mockReturnValueOnce({ exec: async () => user });
+      userModelMock.findOne.mockReturnValue({ exec: async () => user });
       jest.spyOn(bcrypt, 'compare').mockImplementation(async () => true);
+      mockJwtAuthGuard.canActivate = jest.fn(() => false);
 
-      await request(server).post('/auth/login').send(payload).expect(401);
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send(payload)
+        .expect(401);
 
       expect(userModelMock.findOne).toBeCalledWith({
         username: payload.username,
@@ -117,10 +134,14 @@ describe('AppController (e2e)', () => {
       const user = { username: 'user', passwordHash: 'xxx' };
       const mockedToken = 'MOCKED_TOKEN';
       jwtServiceMock.sign.mockImplementation(() => mockedToken);
-      userModelMock.findOne.mockReturnValueOnce({ exec: async () => user });
+      userModelMock.findOne.mockReturnValue({ exec: async () => user });
       jest.spyOn(bcrypt, 'compare').mockImplementation(async () => false);
+      mockJwtAuthGuard.canActivate = jest.fn(() => false);
 
-      await request(server).post('/auth/login').send(payload).expect(401);
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send(payload)
+        .expect(401);
 
       expect(bcrypt.compare).toBeCalledWith(
         payload.password,
@@ -132,7 +153,13 @@ describe('AppController (e2e)', () => {
     });
   });
 
-  afterAll(async () => {
-    await app.close();
+  describe('/api/notes (POST)', () => {
+    it('should throw exception without credentials', () => {
+      mockJwtAuthGuard.canActivate.mockImplementation(() => false);
+      return request(app.getHttpServer())
+        .post('/notes')
+        .send({})
+        .expect(HttpStatus.FORBIDDEN);
+    });
   });
 });
