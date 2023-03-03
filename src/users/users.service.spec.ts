@@ -47,8 +47,8 @@ describe('UsersService', () => {
     it('should create a user with hashed password', async () => {
       const payload = { username: 'usr', password: 'pwd' };
       const expected = { username: 'usr', passwordHash: 'hashed' };
-      jest.spyOn(bcrypt, 'hash').mockImplementationOnce(async () => 'hashed');
-      userModelMock.create.mockImplementationOnce(async () => expected);
+      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => 'hashed');
+      userModelMock.create.mockImplementation(async () => expected);
 
       const result = await usersService.create(payload);
 
@@ -59,7 +59,7 @@ describe('UsersService', () => {
 
     it('should throw BadRequestException if username is taken', async () => {
       const payload = { username: 'usr', password: 'pwd' };
-      userModelMock.create.mockImplementationOnce(() =>
+      userModelMock.create.mockImplementation(() =>
         Promise.reject({ code: 11000 }),
       );
 
@@ -70,7 +70,7 @@ describe('UsersService', () => {
 
     it('should throw InternalServerErrorException if error occurred while saving new user', async () => {
       const payload = { username: 'usr', password: 'pwd' };
-      userModelMock.create.mockImplementationOnce(() =>
+      userModelMock.create.mockImplementation(() =>
         Promise.reject(new Error()),
       );
 

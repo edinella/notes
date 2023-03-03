@@ -34,7 +34,7 @@ describe('AuthController', () => {
         id: '6400fa303a19d358d3c63db4',
         username: 'testuser',
       };
-      authServiceMock.signup.mockImplementationOnce(async () => mockResult);
+      authServiceMock.signup.mockImplementation(async () => mockResult);
 
       const result = await controller.signup(mockDto);
 
@@ -57,7 +57,7 @@ describe('AuthController', () => {
       const mockResult = {
         token: 'mockToken',
       };
-      authServiceMock.login.mockImplementationOnce(() => mockResult.token);
+      authServiceMock.login.mockImplementation(() => mockResult.token);
 
       const result = controller.login(mockReq, mockDto);
 

@@ -44,7 +44,7 @@ describe('AuthService', () => {
         username: 'usr',
         passwordHash: 'x',
       };
-      usersServiceMock.create.mockImplementationOnce(async () => mockResult);
+      usersServiceMock.create.mockImplementation(async () => mockResult);
 
       const response = await authService.signup(mockRequest);
 
@@ -65,7 +65,7 @@ describe('AuthService', () => {
         username: user.username,
       };
 
-      usersServiceMock.findByUsername.mockImplementationOnce(async () => user);
+      usersServiceMock.findByUsername.mockImplementation(async () => user);
       jest.spyOn(bcrypt, 'compare').mockImplementation(async () => true);
 
       const response = await authService.validateUser('testUser', 'password');
@@ -74,7 +74,7 @@ describe('AuthService', () => {
     });
 
     it('should return null if the username is invalid', async () => {
-      usersServiceMock.findByUsername.mockImplementationOnce(async () => null);
+      usersServiceMock.findByUsername.mockImplementation(async () => null);
 
       const response = await authService.validateUser('invalidUsr', 'pwd');
 
@@ -87,7 +87,7 @@ describe('AuthService', () => {
         username: 'testUser',
         passwordHash: 'hashedPassword',
       };
-      usersServiceMock.findByUsername.mockImplementationOnce(async () => user);
+      usersServiceMock.findByUsername.mockImplementation(async () => user);
       jest.spyOn(bcrypt, 'compare').mockImplementation(async () => false);
 
       const response = await authService.validateUser('testUser', 'invalidPwd');
@@ -100,7 +100,7 @@ describe('AuthService', () => {
     it('should return a token', async () => {
       const user = { id: '6400fa303a19d358d3c63db4' };
       const mockedToken = 'MOCKED_TOKEN';
-      jwtServiceMock.sign.mockImplementationOnce(() => mockedToken);
+      jwtServiceMock.sign.mockImplementation(() => mockedToken);
 
       const response = await authService.login(user);
 

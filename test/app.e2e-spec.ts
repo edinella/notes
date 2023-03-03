@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { AppModule } from './../src/app.module';
 import { getModelToken } from '@nestjs/mongoose';
@@ -21,17 +22,12 @@ describe('AppController (e2e)', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-      providers: [
-        {
-          provide: getModelToken(User.name),
-          useValue: userModelMock,
-        },
-        {
-          provide: JwtService,
-          useValue: jwtServiceMock,
-        },
-      ],
-    }).compile();
+    })
+      .overrideProvider(getModelToken(User.name))
+      .useValue(userModelMock)
+      .overrideProvider(JwtService)
+      .useValue(jwtServiceMock)
+      .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
@@ -45,46 +41,94 @@ describe('AppController (e2e)', () => {
     it('should return create and return new user', async () => {
       const payload = { username: 'user', password: 'pwd' };
       const created = { id: '6400fa303a19d358d3c63db4', username: 'user' };
-      userModelMock.create.mockImplementationOnce(() => created);
+      const hashedPwd = 'hashed';
+      userModelMock.create.mockImplementation(async () => created);
+      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => hashedPwd);
 
-      const result = request(server).post('/auth/signup').send(payload);
+      await request(server)
+        .post('/auth/signup')
+        .send(payload)
+        .expect(201)
+        .expect(created);
 
-      result.expect(201).expect(created);
+      expect(bcrypt.hash).toHaveBeenCalledWith(payload.password, 10);
+      expect(userModelMock.create).toBeCalledWith({
+        username: payload.username,
+        passwordHash: hashedPwd,
+      });
     });
 
-    it('should throw exception if username is taken', async () => {
+    it('should throw exception if username is taken', () => {
       const payload = { username: 'user', password: 'pwd' };
-      userModelMock.create.mockImplementationOnce(() =>
+      userModelMock.create.mockImplementation(() =>
         Promise.reject({ code: 11000 }),
       );
 
-      const result = request(server).post('/auth/signup').send(payload);
-
-      result.expect(400);
+      return request(server).post('/auth/signup').send(payload).expect(400);
     });
 
-    it('should throw exception if error occurred while saving new user', async () => {
+    it('should throw exception if error occurred while saving new user', () => {
       const payload = { username: 'user', password: 'pwd' };
-      userModelMock.create.mockImplementationOnce(() =>
+      userModelMock.create.mockImplementation(() =>
         Promise.reject(new Error()),
       );
 
-      const result = request(server).post('/auth/signup').send(payload);
-
-      result.expect(500);
+      return request(server).post('/auth/signup').send(payload).expect(500);
     });
   });
 
   describe('/api/auth/login (POST)', () => {
-    it('should create and return token for good credentials', () => {
+    it('should create and return token for good credentials', async () => {
       const payload = { username: 'user', password: 'pwd' };
+      const user = { username: 'user', passwordHash: 'xxx' };
       const mockedToken = 'MOCKED_TOKEN';
-      const expected = { token: mockedToken };
-      jwtServiceMock.sign.mockImplementationOnce(() => mockedToken);
+      jwtServiceMock.sign.mockImplementation(() => mockedToken);
+      userModelMock.findOne.mockReturnValueOnce({ exec: async () => user });
+      jest.spyOn(bcrypt, 'compare').mockImplementation(async () => true);
 
-      const result = request(server).post('/auth/login').send(payload);
+      await request(server)
+        .post('/auth/login')
+        .send(payload)
+        .expect(200)
+        .expect({ token: mockedToken });
 
-      result.expect(200).expect(expected);
+      expect(userModelMock.findOne).toBeCalledWith({
+        username: payload.username,
+      });
+    });
+
+    it('should throw exception for bad username', async () => {
+      const payload = { username: 'user', password: 'pwd' };
+      const user = null;
+      const mockedToken = 'MOCKED_TOKEN';
+      jwtServiceMock.sign.mockImplementation(() => mockedToken);
+      userModelMock.findOne.mockReturnValueOnce({ exec: async () => user });
+      jest.spyOn(bcrypt, 'compare').mockImplementation(async () => true);
+
+      await request(server).post('/auth/login').send(payload).expect(401);
+
+      expect(userModelMock.findOne).toBeCalledWith({
+        username: payload.username,
+      });
+    });
+
+    it('should throw exception for bad password', async () => {
+      const payload = { username: 'user', password: 'pwd' };
+      const user = { username: 'user', passwordHash: 'xxx' };
+      const mockedToken = 'MOCKED_TOKEN';
+      jwtServiceMock.sign.mockImplementation(() => mockedToken);
+      userModelMock.findOne.mockReturnValueOnce({ exec: async () => user });
+      jest.spyOn(bcrypt, 'compare').mockImplementation(async () => false);
+
+      await request(server).post('/auth/login').send(payload).expect(401);
+
+      expect(bcrypt.compare).toBeCalledWith(
+        payload.password,
+        user.passwordHash,
+      );
+      expect(userModelMock.findOne).toBeCalledWith({
+        username: payload.username,
+      });
     });
   });
 
