@@ -1,11 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { CreateNoteDto } from './dto/create-note.dto';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { UpdateNoteDto } from './dto/update-note.dto';
+import { Note, NoteDocument } from './schemas/note.schema';
 
 @Injectable()
 export class NotesService {
-  create(createNoteDto: CreateNoteDto) {
-    return 'This action adds a new note';
+  constructor(@InjectModel(Note.name) private noteModel: Model<NoteDocument>) {}
+
+  create(note: Note) {
+    return this.noteModel.create(note);
   }
 
   findAll() {

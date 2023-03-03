@@ -27,7 +27,7 @@ export class AuthService {
       return null;
     }
 
-    return { id: user._id, username };
+    return { id: user._id };
   }
 
   login(user: any): string {

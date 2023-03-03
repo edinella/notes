@@ -54,7 +54,7 @@ describe('AuthService', () => {
   });
 
   describe('validateUser', () => {
-    it('should return user id & username for good credentials', async () => {
+    it('should return user id for good credentials', async () => {
       const user = {
         _id: '6400fa303a19d358d3c63db4',
         username: 'testUser',
@@ -62,7 +62,6 @@ describe('AuthService', () => {
       };
       const expectedResult = {
         id: user._id,
-        username: user.username,
       };
 
       usersServiceMock.findByUsername.mockImplementation(async () => user);

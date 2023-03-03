@@ -3,11 +3,11 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { HttpStatus } from '@nestjs/common/enums/http-status.enum';
 import * as request from 'supertest';
 import * as bcrypt from 'bcrypt';
-import { JwtService } from '@nestjs/jwt';
-import { AppModule } from './../src/app.module';
+import { Types } from 'mongoose';
 import { getModelToken } from '@nestjs/mongoose';
-import { User } from './../src/users/schemas/user.schema';
-import { JwtAuthGuard } from '../src/auth/guards/jwt-auth.guard';
+import { AppModule } from '../src/app.module';
+import { User } from '../src/users/schemas/user.schema';
+import { Note } from '../src/notes/schemas/note.schema';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
@@ -16,11 +16,8 @@ describe('AppController (e2e)', () => {
     findOne: jest.fn(),
     create: jest.fn(),
   };
-  const jwtServiceMock = {
-    sign: jest.fn(),
-  };
-  const mockJwtAuthGuard = {
-    canActivate: jest.fn(),
+  const noteModelMock = {
+    create: jest.fn(),
   };
 
   beforeAll(async () => {
@@ -29,10 +26,8 @@ describe('AppController (e2e)', () => {
     })
       .overrideProvider(getModelToken(User.name))
       .useValue(userModelMock)
-      .overrideProvider(JwtService)
-      .useValue(jwtServiceMock)
-      .overrideGuard(JwtAuthGuard)
-      .useValue(mockJwtAuthGuard)
+      .overrideProvider(getModelToken(Note.name))
+      .useValue(noteModelMock)
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -50,7 +45,7 @@ describe('AppController (e2e)', () => {
       const created = { id: '6400fa303a19d358d3c63db4', username: 'user' };
       const hashedPwd = 'hashed';
       userModelMock.create.mockImplementation(async () => created);
-      jest.spyOn(bcrypt, 'hash').mockImplementation(async () => hashedPwd);
+      jest.spyOn(bcrypt, 'hash').mockImplementationOnce(async () => hashedPwd);
 
       await request(app.getHttpServer())
         .post('/auth/signup')
@@ -90,76 +85,121 @@ describe('AppController (e2e)', () => {
     });
   });
 
-  describe('/api/auth/login (POST)', () => {
-    it('should create and return token for good credentials', async () => {
-      const payload = { username: 'user', password: 'pwd' };
-      const user = { username: 'user', passwordHash: 'xxx' };
-      const mockedToken = 'MOCKED_TOKEN';
-      jwtServiceMock.sign.mockImplementation(() => mockedToken);
-      userModelMock.findOne.mockReturnValue({ exec: async () => user });
-      jest.spyOn(bcrypt, 'compare').mockImplementation(async () => true);
+  describe('protected route', () => {
+    const userId = new Types.ObjectId();
+    const username = 'usr';
+    const password = 'pwd';
 
-      await request(app.getHttpServer())
-        .post('/auth/login')
-        .send(payload)
-        .expect(HttpStatus.OK)
-        .expect({ token: mockedToken });
-
-      expect(userModelMock.findOne).toBeCalledWith({
-        username: payload.username,
+    beforeAll(async () => {
+      const passwordHash = await bcrypt.hash(password, 10);
+      const user = { _id: userId, username, passwordHash };
+      userModelMock.findOne.mockImplementation((conditions) => {
+        return conditions.username === user.username
+          ? { exec: async () => user }
+          : { exec: async () => null };
       });
     });
 
-    it('should throw exception for bad username', async () => {
-      const payload = { username: 'user', password: 'pwd' };
-      const user = null;
-      const mockedToken = 'MOCKED_TOKEN';
-      jwtServiceMock.sign.mockImplementation(() => mockedToken);
-      userModelMock.findOne.mockReturnValue({ exec: async () => user });
-      jest.spyOn(bcrypt, 'compare').mockImplementation(async () => true);
-      mockJwtAuthGuard.canActivate = jest.fn(() => false);
-
-      await request(app.getHttpServer())
+    it('/api/auth/login (POST) should return 401', () => {
+      return request(app.getHttpServer())
         .post('/auth/login')
-        .send(payload)
-        .expect(401);
-
-      expect(userModelMock.findOne).toBeCalledWith({
-        username: payload.username,
-      });
+        .send({})
+        .expect(HttpStatus.UNAUTHORIZED);
     });
 
-    it('should throw exception for bad password', async () => {
-      const payload = { username: 'user', password: 'pwd' };
-      const user = { username: 'user', passwordHash: 'xxx' };
-      const mockedToken = 'MOCKED_TOKEN';
-      jwtServiceMock.sign.mockImplementation(() => mockedToken);
-      userModelMock.findOne.mockReturnValue({ exec: async () => user });
-      jest.spyOn(bcrypt, 'compare').mockImplementation(async () => false);
-      mockJwtAuthGuard.canActivate = jest.fn(() => false);
-
-      await request(app.getHttpServer())
-        .post('/auth/login')
-        .send(payload)
-        .expect(401);
-
-      expect(bcrypt.compare).toBeCalledWith(
-        payload.password,
-        user.passwordHash,
-      );
-      expect(userModelMock.findOne).toBeCalledWith({
-        username: payload.username,
-      });
-    });
-  });
-
-  describe('/api/notes (POST)', () => {
-    it('should throw exception without credentials', () => {
-      mockJwtAuthGuard.canActivate.mockImplementation(() => false);
+    it('/api/notes (POST) should return 401', () => {
       return request(app.getHttpServer())
         .post('/notes')
         .send({})
-        .expect(HttpStatus.FORBIDDEN);
+        .expect(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('/api/notes (GET) should return 401', () => {
+      return request(app.getHttpServer())
+        .get('/notes')
+        .expect(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('/api/notes/:id (GET) should return 401', () => {
+      return request(app.getHttpServer())
+        .get('/notes/1')
+        .expect(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('/api/notes/:id (PUT) should return 401', () => {
+      return request(app.getHttpServer())
+        .put('/notes/1')
+        .send({})
+        .expect(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('/api/notes/:id (DELETE) should return 401', () => {
+      return request(app.getHttpServer())
+        .delete('/notes/1')
+        .expect(HttpStatus.UNAUTHORIZED);
+    });
+
+    it('/api/auth/login (POST) on good credentials, should return token', async () => {
+      const { body } = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ username, password })
+        .expect(HttpStatus.OK);
+
+      expect(body.token).toBeDefined();
+    });
+
+    it('/api/auth/login (POST) on bad username, should return 401', async () => {
+      const { body } = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ username: 'BAD_USERNAME', password })
+        .expect(HttpStatus.UNAUTHORIZED);
+
+      expect(body.token).not.toBeDefined();
+    });
+
+    it('/api/auth/login (POST) on bad password, should return 401', async () => {
+      const { body } = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ username, password: 'BAD_PASSWORD' })
+        .expect(HttpStatus.UNAUTHORIZED);
+
+      expect(body.token).not.toBeDefined();
+    });
+
+    describe('with token', () => {
+      let token;
+
+      beforeAll(async () => {
+        const { body } = await request(app.getHttpServer())
+          .post('/auth/login')
+          .send({ username, password })
+          .expect(HttpStatus.OK);
+        token = body.token;
+      });
+
+      describe('/api/notes (POST)', () => {
+        it('should create a note', async () => {
+          const payload = { content: 'My text' };
+          const doc = {
+            _id: new Types.ObjectId(),
+            owner: userId,
+            accessors: [],
+            content: payload.content,
+          };
+          noteModelMock.create.mockImplementation(async () => doc);
+
+          const { body } = await request(app.getHttpServer())
+            .post('/notes')
+            .set('Authorization', 'Bearer ' + token)
+            .send(payload)
+            .expect(HttpStatus.CREATED);
+
+          expect(body._id).toEqual(doc._id.toString());
+          expect(body.owner).toEqual(doc.owner.toString());
+          expect(body.accessors).toEqual(doc.accessors);
+          expect(body.content).toEqual(doc.content);
+        });
+      });
     });
   });
 });
