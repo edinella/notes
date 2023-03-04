@@ -15,6 +15,7 @@ describe('AppController (e2e)', () => {
   const userModelMock = {
     create: jest.fn(),
     findOne: jest.fn(),
+    find: jest.fn(),
   };
   const noteModelMock = {
     create: jest.fn(),
@@ -64,16 +65,22 @@ describe('AppController (e2e)', () => {
       });
     });
 
-    it('should throw exception if username is taken', () => {
-      const payload = { username: 'user', password: 'pwd' };
-      userModelMock.create.mockImplementation(() =>
-        Promise.reject({ code: 11000 }),
-      );
+    it('should throw exception if username is taken', async () => {
+      const username = 'user';
+      const password = 'pwd';
+      const passwordHash = 'hashed';
+      const hash = jest
+        .spyOn(bcrypt, 'hash')
+        .mockImplementationOnce(async () => passwordHash);
+      userModelMock.create = jest.fn(() => Promise.reject({ code: 11000 }));
 
-      return request(app.getHttpServer())
+      const result = await request(app.getHttpServer())
         .post('/auth/signup')
-        .send(payload)
+        .send({ username, password })
         .expect(400);
+
+      expect(hash).toBeCalledWith(password, 10);
+      expect(userModelMock.create).toBeCalledWith({ username, passwordHash });
     });
 
     it('should throw exception if error occurred while saving new user', () => {
@@ -90,13 +97,14 @@ describe('AppController (e2e)', () => {
   });
 
   describe('protected route', () => {
-    const userId = new Types.ObjectId();
+    const owner = new Types.ObjectId().toString();
     const username = 'usr';
     const password = 'pwd';
+    let passwordHash;
 
     beforeAll(async () => {
-      const passwordHash = await bcrypt.hash(password, 10);
-      const user = { _id: userId, username, passwordHash };
+      passwordHash = await bcrypt.hash(password, 10);
+      const user = { _id: owner, username, passwordHash };
       userModelMock.findOne.mockImplementation((conditions) => {
         return conditions.username === user.username
           ? { exec: async () => user }
@@ -183,37 +191,32 @@ describe('AppController (e2e)', () => {
 
       describe('/api/notes (POST)', () => {
         it('should create a note', async () => {
-          const payload = { content: 'My text' };
-          const doc = {
-            _id: new Types.ObjectId(),
-            owner: userId,
-            accessors: [],
-            content: payload.content,
-          };
+          const _id = new Types.ObjectId().toString();
+          const accessors = [];
+          const content = 'My text';
+          const doc = { _id, owner, accessors, content };
           noteModelMock.create.mockImplementation(async () => doc);
 
           const { body } = await request(app.getHttpServer())
             .post('/notes')
             .set('Authorization', 'Bearer ' + token)
-            .send(payload)
+            .send({ content })
             .expect(HttpStatus.CREATED);
 
-          // expect(noteModelMock.create).toBeCalledWith({ owner, content });
-          expect(body._id).toEqual(doc._id.toString());
-          expect(body.owner).toEqual(doc.owner.toString());
-          expect(body.accessors).toEqual(doc.accessors);
-          expect(body.content).toEqual(doc.content);
+          expect(noteModelMock.create).toBeCalledWith({ owner, content });
+          expect(body._id).toEqual(_id);
+          expect(body.owner).toEqual(owner);
+          expect(body.accessors).toEqual(accessors);
+          expect(body.content).toEqual(content);
         });
       });
 
       describe('/api/notes (GET)', () => {
         it('should list user`s notes', async () => {
-          const doc = {
-            _id: new Types.ObjectId(),
-            owner: userId,
-            accessors: [],
-            content: 'My text',
-          };
+          const _id = new Types.ObjectId().toString();
+          const accessors = [];
+          const content = 'My text';
+          const doc = { _id, owner, accessors, content };
           noteModelMock.find.mockImplementation(async () => [doc]);
 
           const { body } = await request(app.getHttpServer())
@@ -221,72 +224,115 @@ describe('AppController (e2e)', () => {
             .set('Authorization', 'Bearer ' + token)
             .expect(HttpStatus.OK);
 
+          expect(noteModelMock.find).toBeCalledWith({ owner });
           expect(body.length).toEqual(1);
-          expect(body[0]._id).toEqual(doc._id.toString());
-          expect(body[0].owner).toEqual(doc.owner.toString());
-          expect(body[0].accessors).toEqual(doc.accessors);
-          expect(body[0].content).toEqual(doc.content);
+          expect(body[0]._id).toEqual(_id);
+          expect(body[0].owner).toEqual(owner);
+          expect(body[0].accessors).toEqual(accessors);
+          expect(body[0].content).toEqual(content);
         });
       });
 
       describe('/api/notes/:id (GET)', () => {
         it('should get user`s note', async () => {
-          const doc = {
-            _id: new Types.ObjectId(),
-            owner: userId,
-            accessors: [],
-            content: 'My text',
-          };
+          const _id = new Types.ObjectId().toString();
+          const accessors = [];
+          const content = 'My text';
+          const doc = { _id, owner, accessors, content };
           noteModelMock.findOne.mockImplementation(async () => doc);
 
           const { body } = await request(app.getHttpServer())
-            .get('/notes/' + doc._id.toString())
+            .get('/notes/' + _id)
             .set('Authorization', 'Bearer ' + token)
             .expect(HttpStatus.OK);
 
-          expect(body._id).toEqual(doc._id.toString());
-          expect(body.owner).toEqual(doc.owner.toString());
-          expect(body.accessors).toEqual(doc.accessors);
-          expect(body.content).toEqual(doc.content);
+          expect(noteModelMock.findOne).toBeCalledWith({ _id, owner });
+          expect(body._id).toEqual(_id);
+          expect(body.owner).toEqual(owner);
+          expect(body.accessors).toEqual(accessors);
+          expect(body.content).toEqual(content);
         });
       });
 
       describe('/api/notes/:id (PUT)', () => {
         it('should update user`s note', async () => {
-          const payload = { content: 'My text' };
-          const doc = {
-            _id: new Types.ObjectId(),
-            owner: userId,
-            accessors: [],
-            content: payload.content,
-          };
+          const _id = new Types.ObjectId().toString();
+          const accessors = [];
+          const content = 'My text';
+          const doc = { _id, owner, accessors, content };
           noteModelMock.findOneAndUpdate.mockImplementation(async () => doc);
 
           const { body } = await request(app.getHttpServer())
-            .put('/notes/' + doc._id.toString())
+            .put('/notes/' + _id)
             .set('Authorization', 'Bearer ' + token)
-            .send(payload)
+            .send({ content })
             .expect(HttpStatus.OK);
 
-          expect(body._id).toEqual(doc._id.toString());
-          expect(body.owner).toEqual(doc.owner.toString());
-          expect(body.accessors).toEqual(doc.accessors);
-          expect(body.content).toEqual(doc.content);
+          expect(noteModelMock.findOneAndUpdate).toBeCalledWith(
+            { _id, owner },
+            { content },
+          );
+          expect(body._id).toEqual(_id);
+          expect(body.owner).toEqual(owner);
+          expect(body.accessors).toEqual(accessors);
+          expect(body.content).toEqual(content);
         });
       });
 
       describe('/api/notes/:id (DELETE)', () => {
         it('should delete user`s note', async () => {
-          const _id = new Types.ObjectId();
-          const deleteResult = { deletedCount: 1 };
-          noteModelMock.deleteOne.mockImplementation(async () => deleteResult);
+          const _id = new Types.ObjectId().toString();
+          const delResult = { deletedCount: 1 };
+          noteModelMock.deleteOne.mockImplementation(async () => delResult);
 
           const { body } = await request(app.getHttpServer())
-            .delete('/notes/' + _id.toString())
+            .delete('/notes/' + _id)
             .set('Authorization', 'Bearer ' + token)
             .expect(HttpStatus.OK);
 
-          expect(body).toEqual(deleteResult);
+          expect(noteModelMock.deleteOne).toBeCalledWith({ _id, owner });
+          expect(body).toEqual(delResult);
+        });
+      });
+
+      describe('/api/notes/:id/share (POST)', () => {
+        it('should update note`s accessors', async () => {
+          const _id = new Types.ObjectId().toString();
+
+          const newAccessors = [
+            new Types.ObjectId().toString(),
+            new Types.ObjectId().toString(),
+            new Types.ObjectId().toString(),
+          ];
+          const validAccessors = [newAccessors[1]];
+
+          const users = [{ _id: newAccessors[1] }];
+          const mock = {
+            find: jest.fn(() => mock),
+            select: jest.fn(() => mock),
+            exec: jest.fn(async () => users),
+          };
+          userModelMock.find = mock.find;
+
+          const resultantDoc = {
+            _id,
+            owner,
+            accessors: validAccessors,
+            content: 'My text',
+          };
+          noteModelMock.findOneAndUpdate = jest.fn(async () => resultantDoc);
+
+          const { body } = await request(app.getHttpServer())
+            .post(`/notes/${_id.toString()}/share`)
+            .send({ accessors: newAccessors })
+            .set('Authorization', 'Bearer ' + token)
+            .expect(HttpStatus.OK);
+
+          expect(noteModelMock.findOneAndUpdate).toBeCalledWith(
+            { owner, _id },
+            { accessors: validAccessors },
+          );
+          expect(body).toEqual(resultantDoc);
         });
       });
     });

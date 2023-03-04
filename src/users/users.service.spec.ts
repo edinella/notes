@@ -7,6 +7,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import { UsersService } from './users.service';
 import { User } from './schemas/user.schema';
+import { Types } from 'mongoose';
 
 describe('UsersService', () => {
   let usersService: UsersService;
@@ -14,6 +15,7 @@ describe('UsersService', () => {
   const userModelMock = {
     findOne: jest.fn(),
     create: jest.fn(),
+    find: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -77,6 +79,30 @@ describe('UsersService', () => {
       await expect(usersService.create(payload)).rejects.toThrow(
         InternalServerErrorException,
       );
+    });
+  });
+
+  describe('purgeIDs', () => {
+    it('should check if users exists and return valid IDs only', async () => {
+      const candidateIDs = [
+        new Types.ObjectId(),
+        new Types.ObjectId(),
+        new Types.ObjectId(),
+      ];
+      const strCandidateIDs = candidateIDs.map((id) => id.toString());
+      const mockDocs = [{ _id: candidateIDs[1] }];
+      const mock = {
+        find: jest.fn(() => mock),
+        select: jest.fn(() => mock),
+        exec: jest.fn(async () => mockDocs),
+      };
+      userModelMock.find = mock.find;
+
+      const result = await usersService.purgeIDs(strCandidateIDs);
+
+      expect(mock.find).toHaveBeenCalledWith({ _id: { $in: strCandidateIDs } });
+      expect(mock.select).toHaveBeenCalledWith('_id');
+      expect(result).toEqual([candidateIDs[1]]);
     });
   });
 });

@@ -29,4 +29,14 @@ export class UsersService {
       });
     });
   }
+
+  purgeIDs(candidateIDs: string[]) {
+    return this.userModel
+      .find({ _id: { $in: candidateIDs } })
+      .select('_id')
+      .exec()
+      .then((docs) => {
+        return docs.map((doc) => doc._id);
+      });
+  }
 }

@@ -11,6 +11,8 @@ describe('NotesController', () => {
     findAll: jest.fn(),
     findOne: jest.fn(),
     update: jest.fn(),
+    remove: jest.fn(),
+    share: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -97,6 +99,46 @@ describe('NotesController', () => {
       const result = await controller.update(req, _id, payload);
 
       expect(notesServiceMock.update).toBeCalledWith(owner, _id, content);
+      expect(result).toEqual(doc);
+    });
+  });
+
+  describe('delete', () => {
+    it('should call service`s remove and return its result', async () => {
+      const _id = new Types.ObjectId().toString();
+      const owner = new Types.ObjectId().toString();
+      const req = { user: { id: owner } };
+      const delResult = { deletedCount: 1 };
+      notesServiceMock.remove.mockImplementation(async () => delResult);
+
+      const result = await controller.remove(req, _id);
+
+      expect(notesServiceMock.remove).toBeCalledWith(owner, _id);
+      expect(result).toEqual(delResult);
+    });
+  });
+
+  describe('share', () => {
+    it('should call service`s share and return its result', async () => {
+      const _id = new Types.ObjectId().toString();
+      const owner = new Types.ObjectId().toString();
+      const accessors = [];
+      const content = 'My text';
+      const doc = { _id, owner, accessors, content };
+      const req = { user: { id: owner } };
+      const candidateAccessors = [new Types.ObjectId().toString()];
+
+      notesServiceMock.share.mockImplementation(async () => doc);
+
+      const result = await controller.share(req, _id, {
+        accessors: candidateAccessors,
+      });
+
+      expect(notesServiceMock.share).toBeCalledWith(
+        owner,
+        _id,
+        candidateAccessors,
+      );
       expect(result).toEqual(doc);
     });
   });
