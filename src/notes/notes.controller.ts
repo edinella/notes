@@ -21,19 +21,12 @@ export class NotesController {
 
   @Post()
   create(@Request() req, @Body() createNoteDto: CreateNoteDto) {
-    console.log({ 'req.user': req.user });
-
-    const note = {
-      owner: req.user.id,
-      accessors: [],
-      content: createNoteDto.content,
-    };
-    return this.notesService.create(note);
+    return this.notesService.create(req.user.id, createNoteDto.content);
   }
 
   @Get()
-  findAll() {
-    return this.notesService.findAll();
+  findAll(@Request() req) {
+    return this.notesService.findAll(req.user.id);
   }
 
   @Get(':id')

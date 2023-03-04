@@ -8,12 +8,12 @@ import { Note, NoteDocument } from './schemas/note.schema';
 export class NotesService {
   constructor(@InjectModel(Note.name) private noteModel: Model<NoteDocument>) {}
 
-  create(note: Note) {
-    return this.noteModel.create(note);
+  create(owner: string, content: string) {
+    return this.noteModel.create({ owner, content });
   }
 
-  findAll() {
-    return `This action returns all notes`;
+  findAll(owner) {
+    return this.noteModel.find({ owner });
   }
 
   findOne(id: number) {

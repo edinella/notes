@@ -13,11 +13,12 @@ describe('AppController (e2e)', () => {
   let app: INestApplication;
 
   const userModelMock = {
-    findOne: jest.fn(),
     create: jest.fn(),
+    findOne: jest.fn(),
   };
   const noteModelMock = {
     create: jest.fn(),
+    find: jest.fn(),
   };
 
   beforeAll(async () => {
@@ -198,6 +199,29 @@ describe('AppController (e2e)', () => {
           expect(body.owner).toEqual(doc.owner.toString());
           expect(body.accessors).toEqual(doc.accessors);
           expect(body.content).toEqual(doc.content);
+        });
+      });
+
+      describe('/api/notes (GET)', () => {
+        it('should list user`s notes', async () => {
+          const doc = {
+            _id: new Types.ObjectId(),
+            owner: userId,
+            accessors: [],
+            content: 'My text',
+          };
+          noteModelMock.find.mockImplementation(async () => [doc]);
+
+          const { body } = await request(app.getHttpServer())
+            .get('/notes')
+            .set('Authorization', 'Bearer ' + token)
+            .expect(HttpStatus.OK);
+
+          expect(body.length).toEqual(1);
+          expect(body[0]._id).toEqual(doc._id.toString());
+          expect(body[0].owner).toEqual(doc.owner.toString());
+          expect(body[0].accessors).toEqual(doc.accessors);
+          expect(body[0].content).toEqual(doc.content);
         });
       });
     });

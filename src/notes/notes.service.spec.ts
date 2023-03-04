@@ -1,5 +1,6 @@
 import { getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
+import { Types } from 'mongoose';
 import { NotesService } from './notes.service';
 import { Note } from './schemas/note.schema';
 
@@ -8,6 +9,7 @@ describe('NotesService', () => {
 
   const noteModelMock = {
     create: jest.fn(),
+    find: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -26,5 +28,37 @@ describe('NotesService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('create', () => {
+    it('should create a note', async () => {
+      const _id = new Types.ObjectId().toString();
+      const owner = new Types.ObjectId().toString();
+      const accessors = [];
+      const content = 'My text';
+      const doc = { _id, owner, accessors, content };
+      noteModelMock.create.mockImplementation(async () => doc);
+
+      const result = await service.create(owner.toString(), content);
+
+      expect(noteModelMock.create).toHaveBeenCalledWith({ owner, content });
+      expect(result).toEqual(doc);
+    });
+  });
+
+  describe('findAll', () => {
+    it('should list user`s notes', async () => {
+      const _id = new Types.ObjectId().toString();
+      const owner = new Types.ObjectId().toString();
+      const accessors = [];
+      const content = 'My text';
+      const docs = [{ _id, owner, accessors, content }];
+      noteModelMock.find.mockImplementation(async () => docs);
+
+      const result = await service.findAll(owner);
+
+      expect(noteModelMock.find).toHaveBeenCalledWith({ owner });
+      expect(result).toEqual(docs);
+    });
   });
 });
