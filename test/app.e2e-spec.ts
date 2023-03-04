@@ -224,7 +224,9 @@ describe('AppController (e2e)', () => {
             .set('Authorization', 'Bearer ' + token)
             .expect(HttpStatus.OK);
 
-          expect(noteModelMock.find).toBeCalledWith({ owner });
+          expect(noteModelMock.find).toBeCalledWith({
+            $or: [{ owner }, { accessors: owner }],
+          });
           expect(body.length).toEqual(1);
           expect(body[0]._id).toEqual(_id);
           expect(body[0].owner).toEqual(owner);
@@ -246,7 +248,10 @@ describe('AppController (e2e)', () => {
             .set('Authorization', 'Bearer ' + token)
             .expect(HttpStatus.OK);
 
-          expect(noteModelMock.findOne).toBeCalledWith({ _id, owner });
+          expect(noteModelMock.findOne).toBeCalledWith({
+            _id,
+            $or: [{ owner }, { accessors: owner }],
+          });
           expect(body._id).toEqual(_id);
           expect(body.owner).toEqual(owner);
           expect(body.accessors).toEqual(accessors);

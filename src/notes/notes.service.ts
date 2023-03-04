@@ -11,28 +11,36 @@ export class NotesService {
     @InjectModel(Note.name) private noteModel: Model<NoteDocument>,
   ) {}
 
-  create(owner: string, content: string) {
-    return this.noteModel.create({ owner, content });
+  create(userId: string, content: string) {
+    return this.noteModel.create({ owner: userId, content });
   }
 
-  findAll(owner) {
-    return this.noteModel.find({ owner });
+  findAll(userId: string) {
+    return this.noteModel.find({
+      $or: [{ owner: userId }, { accessors: userId }],
+    });
   }
 
-  findOne(owner: string, _id: string) {
-    return this.noteModel.findOne({ owner, _id });
+  findOne(userId: string, _id: string) {
+    return this.noteModel.findOne({
+      _id,
+      $or: [{ owner: userId }, { accessors: userId }],
+    });
   }
 
-  update(owner: string, _id: string, content: string) {
-    return this.noteModel.findOneAndUpdate({ owner, _id }, { content });
+  update(userId: string, _id: string, content: string) {
+    return this.noteModel.findOneAndUpdate({ _id, owner: userId }, { content });
   }
 
-  remove(owner: string, _id: string) {
-    return this.noteModel.deleteOne({ owner, _id });
+  remove(userId: string, _id: string) {
+    return this.noteModel.deleteOne({ _id, owner: userId });
   }
 
-  async share(owner: string, _id: string, newAccessors: string[]) {
+  async share(userId: string, _id: string, newAccessors: string[]) {
     const accessors = await this.usersService.purgeIDs(newAccessors);
-    return this.noteModel.findOneAndUpdate({ owner, _id }, { accessors });
+    return this.noteModel.findOneAndUpdate(
+      { _id, owner: userId },
+      { accessors },
+    );
   }
 }

@@ -68,7 +68,9 @@ describe('NotesService', () => {
 
       const result = await service.findAll(owner);
 
-      expect(noteModelMock.find).toHaveBeenCalledWith({ owner });
+      expect(noteModelMock.find).toHaveBeenCalledWith({
+        $or: [{ owner }, { accessors: owner }],
+      });
       expect(result).toEqual(docs);
     });
   });
@@ -84,7 +86,10 @@ describe('NotesService', () => {
 
       const result = await service.findOne(owner, _id);
 
-      expect(noteModelMock.findOne).toHaveBeenCalledWith({ owner, _id });
+      expect(noteModelMock.findOne).toHaveBeenCalledWith({
+        _id,
+        $or: [{ owner }, { accessors: owner }],
+      });
       expect(result).toEqual(doc);
     });
   });
