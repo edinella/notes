@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Types } from 'mongoose';
 import { NotesController } from './notes.controller';
 import { NotesService } from './notes.service';
 
@@ -9,6 +10,7 @@ describe('NotesController', () => {
     create: jest.fn(),
     findAll: jest.fn(),
     findOne: jest.fn(),
+    update: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -30,44 +32,71 @@ describe('NotesController', () => {
   });
 
   describe('create', () => {
-    it('should return call service`s create and return its result', async () => {
-      const payload = { content: 'My text' };
-      const doc = { content: payload.content, id: 'NOTEID' };
-      const req = { user: { id: 'USERID' } };
+    it('should call service`s create and return its result', async () => {
+      const _id = new Types.ObjectId().toString();
+      const owner = new Types.ObjectId().toString();
+      const accessors = [];
+      const content = 'My text';
+      const doc = { _id, owner, accessors, content };
+      const req = { user: { id: owner } };
+      const payload = { content };
       notesServiceMock.create.mockImplementation(async () => doc);
 
       const result = await controller.create(req, payload);
 
-      expect(notesServiceMock.create).toBeCalledWith(
-        req.user.id,
-        payload.content,
-      );
+      expect(notesServiceMock.create).toBeCalledWith(owner, content);
       expect(result).toEqual(doc);
     });
   });
 
   describe('findAll', () => {
-    it('should return call service`s findAllByOwner and return its result', async () => {
-      const docs = [{ content: 'My text', id: 'NOTEID' }];
-      const req = { user: { id: 'USERID' } };
+    it('should call service`s findAll and return its result', async () => {
+      const _id = new Types.ObjectId().toString();
+      const owner = new Types.ObjectId().toString();
+      const accessors = [];
+      const content = 'My text';
+      const docs = [{ _id, owner, accessors, content }];
+      const req = { user: { id: owner } };
       notesServiceMock.findAll.mockImplementation(async () => docs);
 
       const result = await controller.findAll(req);
 
-      expect(notesServiceMock.findAll).toBeCalledWith(req.user.id);
+      expect(notesServiceMock.findAll).toBeCalledWith(owner);
       expect(result).toEqual(docs);
     });
   });
 
   describe('findOne', () => {
-    it('should return call service`s findAllByOwner and return its result', async () => {
-      const doc = { content: 'My text', id: 'NOTEID' };
-      const req = { user: { id: 'USERID' } };
+    it('should call service`s findOne and return its result', async () => {
+      const _id = new Types.ObjectId().toString();
+      const owner = new Types.ObjectId().toString();
+      const accessors = [];
+      const content = 'My text';
+      const doc = { _id, owner, accessors, content };
+      const req = { user: { id: owner } };
       notesServiceMock.findOne.mockImplementation(async () => doc);
 
-      const result = await controller.findOne(req, doc.id);
+      const result = await controller.findOne(req, _id);
 
-      expect(notesServiceMock.findOne).toBeCalledWith(req.user.id, doc.id);
+      expect(notesServiceMock.findOne).toBeCalledWith(owner, _id);
+      expect(result).toEqual(doc);
+    });
+  });
+
+  describe('update', () => {
+    it('should call service`s update and return its result', async () => {
+      const _id = new Types.ObjectId().toString();
+      const owner = new Types.ObjectId().toString();
+      const accessors = [];
+      const content = 'My text';
+      const doc = { _id, owner, accessors, content };
+      const req = { user: { id: owner } };
+      const payload = { content };
+      notesServiceMock.update.mockImplementation(async () => doc);
+
+      const result = await controller.update(req, _id, payload);
+
+      expect(notesServiceMock.update).toBeCalledWith(owner, _id, content);
       expect(result).toEqual(doc);
     });
   });

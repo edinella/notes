@@ -20,6 +20,7 @@ describe('AppController (e2e)', () => {
     create: jest.fn(),
     find: jest.fn(),
     findOne: jest.fn(),
+    findOneAndUpdate: jest.fn(),
   };
 
   beforeAll(async () => {
@@ -239,6 +240,30 @@ describe('AppController (e2e)', () => {
           const { body } = await request(app.getHttpServer())
             .get('/notes/' + doc._id.toString())
             .set('Authorization', 'Bearer ' + token)
+            .expect(HttpStatus.OK);
+
+          expect(body._id).toEqual(doc._id.toString());
+          expect(body.owner).toEqual(doc.owner.toString());
+          expect(body.accessors).toEqual(doc.accessors);
+          expect(body.content).toEqual(doc.content);
+        });
+      });
+
+      describe('/api/notes/:id (PUT)', () => {
+        it('should update user`s note', async () => {
+          const payload = { content: 'My text' };
+          const doc = {
+            _id: new Types.ObjectId(),
+            owner: userId,
+            accessors: [],
+            content: payload.content,
+          };
+          noteModelMock.findOneAndUpdate.mockImplementation(async () => doc);
+
+          const { body } = await request(app.getHttpServer())
+            .put('/notes/' + doc._id.toString())
+            .set('Authorization', 'Bearer ' + token)
+            .send(payload)
             .expect(HttpStatus.OK);
 
           expect(body._id).toEqual(doc._id.toString());

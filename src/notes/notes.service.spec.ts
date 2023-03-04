@@ -11,6 +11,7 @@ describe('NotesService', () => {
     create: jest.fn(),
     find: jest.fn(),
     findOne: jest.fn(),
+    findOneAndUpdate: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -75,6 +76,25 @@ describe('NotesService', () => {
       const result = await service.findOne(owner, _id);
 
       expect(noteModelMock.findOne).toHaveBeenCalledWith({ owner, _id });
+      expect(result).toEqual(doc);
+    });
+  });
+
+  describe('update', () => {
+    it('should get user`s note by id', async () => {
+      const _id = new Types.ObjectId().toString();
+      const owner = new Types.ObjectId().toString();
+      const accessors = [];
+      const content = 'My text';
+      const doc = { _id, owner, accessors, content };
+      noteModelMock.findOneAndUpdate.mockImplementation(async () => doc);
+
+      const result = await service.update(owner, _id, content);
+
+      expect(noteModelMock.findOneAndUpdate).toHaveBeenCalledWith(
+        { owner, _id },
+        { content },
+      );
       expect(result).toEqual(doc);
     });
   });

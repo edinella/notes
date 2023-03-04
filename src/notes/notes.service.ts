@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { UpdateNoteDto } from './dto/update-note.dto';
 import { Note, NoteDocument } from './schemas/note.schema';
 
 @Injectable()
@@ -16,12 +15,12 @@ export class NotesService {
     return this.noteModel.find({ owner });
   }
 
-  findOne(owner: string, id: string) {
-    return this.noteModel.findOne({ owner, _id: id });
+  findOne(owner: string, _id: string) {
+    return this.noteModel.findOne({ owner, _id });
   }
 
-  update(id: number, updateNoteDto: UpdateNoteDto) {
-    return `This action updates a #${id} note`;
+  update(owner: string, _id: string, content: string) {
+    return this.noteModel.findOneAndUpdate({ owner, _id }, { content });
   }
 
   remove(id: number) {

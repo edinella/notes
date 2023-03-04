@@ -21,7 +21,8 @@ export class NotesController {
 
   @Post()
   create(@Request() req, @Body() createNoteDto: CreateNoteDto) {
-    return this.notesService.create(req.user.id, createNoteDto.content);
+    const { content } = createNoteDto;
+    return this.notesService.create(req.user.id, content);
   }
 
   @Get()
@@ -35,8 +36,13 @@ export class NotesController {
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() updateNoteDto: UpdateNoteDto) {
-    return this.notesService.update(+id, updateNoteDto);
+  update(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() updateNoteDto: UpdateNoteDto,
+  ) {
+    const { content } = updateNoteDto;
+    return this.notesService.update(req.user.id, id, content);
   }
 
   @Delete(':id')
