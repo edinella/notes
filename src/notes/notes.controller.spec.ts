@@ -8,6 +8,7 @@ describe('NotesController', () => {
   const notesServiceMock = {
     create: jest.fn(),
     findAll: jest.fn(),
+    findOne: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -55,6 +56,19 @@ describe('NotesController', () => {
 
       expect(notesServiceMock.findAll).toBeCalledWith(req.user.id);
       expect(result).toEqual(docs);
+    });
+  });
+
+  describe('findOne', () => {
+    it('should return call service`s findAllByOwner and return its result', async () => {
+      const doc = { content: 'My text', id: 'NOTEID' };
+      const req = { user: { id: 'USERID' } };
+      notesServiceMock.findOne.mockImplementation(async () => doc);
+
+      const result = await controller.findOne(req, doc.id);
+
+      expect(notesServiceMock.findOne).toBeCalledWith(req.user.id, doc.id);
+      expect(result).toEqual(doc);
     });
   });
 });

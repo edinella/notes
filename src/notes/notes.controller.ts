@@ -30,8 +30,8 @@ export class NotesController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.notesService.findOne(+id);
+  findOne(@Request() req, @Param('id') id: string) {
+    return this.notesService.findOne(req.user.id, id);
   }
 
   @Put(':id')

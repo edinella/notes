@@ -16,8 +16,8 @@ export class NotesService {
     return this.noteModel.find({ owner });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} note`;
+  findOne(owner: string, id: string) {
+    return this.noteModel.findOne({ owner, _id: id });
   }
 
   update(id: number, updateNoteDto: UpdateNoteDto) {
