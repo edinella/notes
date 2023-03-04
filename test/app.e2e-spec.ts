@@ -21,6 +21,7 @@ describe('AppController (e2e)', () => {
     find: jest.fn(),
     findOne: jest.fn(),
     findOneAndUpdate: jest.fn(),
+    deleteOne: jest.fn(),
   };
 
   beforeAll(async () => {
@@ -197,6 +198,7 @@ describe('AppController (e2e)', () => {
             .send(payload)
             .expect(HttpStatus.CREATED);
 
+          // expect(noteModelMock.create).toBeCalledWith({ owner, content });
           expect(body._id).toEqual(doc._id.toString());
           expect(body.owner).toEqual(doc.owner.toString());
           expect(body.accessors).toEqual(doc.accessors);
@@ -270,6 +272,21 @@ describe('AppController (e2e)', () => {
           expect(body.owner).toEqual(doc.owner.toString());
           expect(body.accessors).toEqual(doc.accessors);
           expect(body.content).toEqual(doc.content);
+        });
+      });
+
+      describe('/api/notes/:id (DELETE)', () => {
+        it('should delete user`s note', async () => {
+          const _id = new Types.ObjectId();
+          const deleteResult = { deletedCount: 1 };
+          noteModelMock.deleteOne.mockImplementation(async () => deleteResult);
+
+          const { body } = await request(app.getHttpServer())
+            .delete('/notes/' + _id.toString())
+            .set('Authorization', 'Bearer ' + token)
+            .expect(HttpStatus.OK);
+
+          expect(body).toEqual(deleteResult);
         });
       });
     });

@@ -23,7 +23,7 @@ export class NotesService {
     return this.noteModel.findOneAndUpdate({ owner, _id }, { content });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} note`;
+  remove(owner: string, _id: string) {
+    return this.noteModel.deleteOne({ owner, _id });
   }
 }
