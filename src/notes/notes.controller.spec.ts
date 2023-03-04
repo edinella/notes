@@ -13,6 +13,7 @@ describe('NotesController', () => {
     update: jest.fn(),
     remove: jest.fn(),
     share: jest.fn(),
+    search: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -140,6 +141,24 @@ describe('NotesController', () => {
         candidateAccessors,
       );
       expect(result).toEqual(doc);
+    });
+  });
+
+  describe('search', () => {
+    it('should call service`s search and return its result', async () => {
+      const _id = new Types.ObjectId().toString();
+      const owner = new Types.ObjectId().toString();
+      const accessors = [];
+      const content = 'My keyword`s text';
+      const docs = [{ _id, owner, accessors, content }];
+      const req = { user: { id: owner } };
+      const q = 'keyword';
+      notesServiceMock.search.mockImplementation(async () => docs);
+
+      const result = await controller.search(req, q);
+
+      expect(notesServiceMock.search).toBeCalledWith(owner, q);
+      expect(result).toEqual(docs);
     });
   });
 });

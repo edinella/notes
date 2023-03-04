@@ -43,4 +43,17 @@ export class NotesService {
       { accessors },
     );
   }
+
+  search(userId: string, q: string) {
+    /*
+    This will prevent literal chars from the user to be interpreted as regex tokens.
+    For example, searching the string "A." will also match "AB" if not escaped.
+    */
+    const escaped = q.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, '\\$&');
+    const contentMatcher = new RegExp(escaped, 'i');
+    return this.noteModel.find({
+      $or: [{ owner: userId }, { accessors: userId }],
+      content: contentMatcher,
+    });
+  }
 }

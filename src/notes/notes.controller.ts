@@ -9,6 +9,7 @@ import {
   Request,
   Put,
   HttpCode,
+  Query,
 } from '@nestjs/common';
 import { NotesService } from './notes.service';
 import { CreateNoteDto } from './dto/create-note.dto';
@@ -16,28 +17,28 @@ import { UpdateNoteDto } from './dto/update-note.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ShareNoteDto } from './dto/share-note.dto';
 
-@Controller('notes')
+@Controller()
 @UseGuards(JwtAuthGuard)
 export class NotesController {
   constructor(private readonly notesService: NotesService) {}
 
-  @Post()
+  @Post('notes')
   create(@Request() req, @Body() createNoteDto: CreateNoteDto) {
     const { content } = createNoteDto;
     return this.notesService.create(req.user.id, content);
   }
 
-  @Get()
+  @Get('notes')
   findAll(@Request() req) {
     return this.notesService.findAll(req.user.id);
   }
 
-  @Get(':id')
+  @Get('notes/:id')
   findOne(@Request() req, @Param('id') id: string) {
     return this.notesService.findOne(req.user.id, id);
   }
 
-  @Put(':id')
+  @Put('notes/:id')
   update(
     @Request() req,
     @Param('id') id: string,
@@ -47,12 +48,12 @@ export class NotesController {
     return this.notesService.update(req.user.id, id, content);
   }
 
-  @Delete(':id')
+  @Delete('notes/:id')
   remove(@Request() req, @Param('id') id: string) {
     return this.notesService.remove(req.user.id, id);
   }
 
-  @Post(':id/share')
+  @Post('notes/:id/share')
   @HttpCode(200)
   share(
     @Request() req,
@@ -61,5 +62,10 @@ export class NotesController {
   ) {
     const { accessors } = shareNoteDto;
     return this.notesService.share(req.user.id, id, accessors);
+  }
+
+  @Get('search')
+  search(@Request() req, @Query('q') q: string) {
+    return this.notesService.search(req.user.id, q);
   }
 }

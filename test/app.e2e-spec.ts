@@ -340,6 +340,32 @@ describe('AppController (e2e)', () => {
           expect(body).toEqual(resultantDoc);
         });
       });
+
+      describe('/api/search (GET)', () => {
+        it('should find user`s matching notes by keyword, escaping special chars', async () => {
+          const _id = new Types.ObjectId().toString();
+          const accessors = [];
+          const content = 'My text';
+          const doc = { _id, owner, accessors, content };
+          noteModelMock.find.mockImplementation(async () => [doc]);
+          const q = encodeURIComponent('A-[]/{}()*+?.\\^$|');
+
+          const { body } = await request(app.getHttpServer())
+            .get('/search?q=' + q)
+            .set('Authorization', 'Bearer ' + token)
+            .expect(HttpStatus.OK);
+
+          expect(noteModelMock.find).toBeCalledWith({
+            $or: [{ owner }, { accessors: owner }],
+            content: /A\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|/i,
+          });
+          expect(body.length).toEqual(1);
+          expect(body[0]._id).toEqual(_id);
+          expect(body[0].owner).toEqual(owner);
+          expect(body[0].accessors).toEqual(accessors);
+          expect(body[0].content).toEqual(content);
+        });
+      });
     });
   });
 });

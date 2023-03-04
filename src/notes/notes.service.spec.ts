@@ -154,4 +154,23 @@ describe('NotesService', () => {
       expect(result).toEqual(updatedDoc);
     });
   });
+
+  describe('search', () => {
+    it('should match note`s content, escaping special chars', async () => {
+      const _id = new Types.ObjectId().toString();
+      const owner = new Types.ObjectId().toString();
+      const accessors = [];
+      const content = 'My text';
+      const docs = [{ _id, owner, accessors, content }];
+      noteModelMock.find.mockImplementation(async () => docs);
+
+      const result = await service.search(owner, 'A-[]/{}()*+?.\\^$|');
+
+      expect(noteModelMock.find).toHaveBeenCalledWith({
+        $or: [{ owner }, { accessors: owner }],
+        content: /A\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|/i,
+      });
+      expect(result).toEqual(docs);
+    });
+  });
 });
