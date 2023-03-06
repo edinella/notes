@@ -2,8 +2,11 @@
 
 A secure and scalable RESTful API that allows users to create, read, update, and delete notes. The application also allow users to share their notes with other users and search for notes based on keywords.
 
-It's based on [Nest](https://nestjs.com/), a framework for building efficient,
-scalable Node.js server-side applications.
+It's based on [Nest.js](https://nestjs.com/), a solid choice for API development due to its modularity, TypeScript support, easy integration, and active community. It provides a well-structured and scalable architecture that can help developers create safer and easier-to-maintain applications.
+
+For database, MongoDB was choosen, because it provides powerful indexing capabilities, a flexible data model, and high scalability. Additionally, like Nest.js, MongoDB has a large and active community of developers, making it easy to find resources and support when needed.
+
+Mongoose was the choice for object modeling. Mongoose has been around for many years and is a mature and stable library. It also has a large community of developers and contributors, and Nest.js have built-in support for Mongoose.
 
 ## [Running with Docker](#docker) *(recommended)*
 
