@@ -1,40 +1,57 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# Backend Assessment
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A secure and scalable RESTful API that allows users to create, read, update, and delete notes. The application also allow users to share their notes with other users and search for notes based on keywords.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+It's based on [Nest](https://nestjs.com/), a framework for building efficient,
+scalable Node.js server-side applications.
 
-## Description
+## [Running with Docker](#docker) *(recommended)*
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+This guide is designed to help you get up and running with this setup.
 
-## Installation
+- First ensure you have [Docker](https://www.docker.com/get-started/) configured.
+- Then start the environment with:
 
-```bash
-$ npm install
-```
+  ```sh
+  $ docker compose up --build
+  ```
 
-## Running the app
+  > 💡 Optionally, [install Tilt](https://docs.tilt.dev/install.html) and you can
+  > start the services with:
+  >
+  >  ```sh
+  >  $ tilt up
+  >  ```
+    and you can see the services state and logs on Tilt interface.
 
-```bash
+    Services included are
+    - mongo
+    - api (API docs address: [http://localhost:3000/api](http://localhost:3000/api))
+
+## Development installation
+
+- `Node.js >= 18` is required, along with `npm >= 9`.
+- Install project dependencies:
+
+  ```sh
+  $ npm install
+  ```
+
+### Configuration
+
+- Running on Docker Compose, a MongoDB database is included. [Read here](#docker).
+  
+- If you want to run the Node.js app elsewhere, provide this env vars (replacing "x"):
+
+  ```sh
+  $ export NODE_ENV=development
+  $ export JWT_SECRET=x
+  $ export DB_URL=x
+  ```
+
+### Running the app
+
+```sh
 # development
 $ npm run start
 
@@ -45,9 +62,9 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
-## Test
+### Test
 
-```bash
+```sh
 # unit tests
 $ npm run test
 
@@ -57,17 +74,3 @@ $ npm run test:e2e
 # test coverage
 $ npm run test:cov
 ```
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
