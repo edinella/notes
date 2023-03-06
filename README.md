@@ -32,17 +32,18 @@ This guide is designed to help you get up and running with this setup.
     - api (endpoint: [http://localhost:3000](http://localhost:3000))
 
     Available routes are:
-    - Authentication Endpoints
-      > POST `/api/auth/signup`: create a new user account.
-      > POST `/api/auth/login`: log in to an existing user account and receive an access token.
-    - Note Endpoints
-      > GET `/api/notes`: get a list of all notes for the authenticated user.
-      > GET `/api/notes/:id`: get a note by ID for the authenticated user.
-      > POST `/api/notes`: create a new note for the authenticated user.
-      > PUT `/api/notes/:id`: update an existing note by ID for the authenticated user.
-      > DELETE `/api/notes/:id`: delete a note by ID for the authenticated user.
-      > POST `/api/notes/:id/share`: share a note with another user for the authenticated user.
-      > GET `/api/search?q=:query`: search for notes based on keywords for the authenticated user.
+
+    Method | URI                  | Description
+    ------ | -------------------- | -----------
+    POST   | /api/auth/signup     | Create a new user account.
+    POST   | /api/auth/login      | Log in to an existing user account and receive an access token.
+    GET    | /api/notes           | Get a list of all notes for the authenticated user.
+    GET    | /api/notes/:id       | Get a note by ID for the authenticated user.
+    POST   | /api/notes           | Create a new note for the authenticated user.
+    PUT    | /api/notes/:id       | Update an existing note by ID for the authenticated user.
+    DELETE | /api/notes/:id       | Delete a note by ID for the authenticated user.
+    POST   | /api/notes/:id/share | Share a note with another user for the authenticated user.
+    GET    | /api/search?q=:query | Search for notes based on keywords for the authenticated user.
 
 ## Development installation
 
