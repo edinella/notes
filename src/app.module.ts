@@ -9,10 +9,13 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 
 const ThrottlerProvider = { provide: APP_GUARD, useClass: ThrottlerGuard };
+const isProduction = process.env.NODE_ENV == 'production';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      ignoreEnvFile: isProduction,
+    }),
     ThrottlerModule.forRoot({ ttl: 60, limit: 30 }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
