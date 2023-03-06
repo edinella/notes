@@ -27,9 +27,22 @@ This guide is designed to help you get up and running with this setup.
   >  ```
     and you can see the services state and logs on Tilt interface.
 
-    Services included are
+    Services included are:
     - mongo
-    - api (API docs address: [http://localhost:3000/api](http://localhost:3000/api))
+    - api (endpoint: [http://localhost:3000](http://localhost:3000))
+
+    Available routes are:
+    - Authentication Endpoints
+      > POST `/api/auth/signup`: create a new user account.
+      > POST `/api/auth/login`: log in to an existing user account and receive an access token.
+    - Note Endpoints
+      > GET `/api/notes`: get a list of all notes for the authenticated user.
+      > GET `/api/notes/:id`: get a note by ID for the authenticated user.
+      > POST `/api/notes`: create a new note for the authenticated user.
+      > PUT `/api/notes/:id`: update an existing note by ID for the authenticated user.
+      > DELETE `/api/notes/:id`: delete a note by ID for the authenticated user.
+      > POST `/api/notes/:id/share`: share a note with another user for the authenticated user.
+      > GET `/api/search?q=:query`: search for notes based on keywords for the authenticated user.
 
 ## Development installation
 
