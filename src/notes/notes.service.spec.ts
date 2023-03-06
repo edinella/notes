@@ -108,6 +108,7 @@ describe('NotesService', () => {
       expect(noteModelMock.findOneAndUpdate).toHaveBeenCalledWith(
         { owner, _id },
         { content },
+        { returnOriginal: false },
       );
       expect(result).toEqual(doc);
     });
@@ -150,6 +151,7 @@ describe('NotesService', () => {
       expect(noteModelMock.findOneAndUpdate).toHaveBeenCalledWith(
         { owner, _id },
         { accessors: validAccessors },
+        { returnOriginal: false },
       );
       expect(result).toEqual(updatedDoc);
     });

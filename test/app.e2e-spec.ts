@@ -264,23 +264,28 @@ describe('AppController (e2e)', () => {
           const _id = new Types.ObjectId().toString();
           const accessors = [];
           const content = 'My text';
+          const newContent = 'My new text';
           const doc = { _id, owner, accessors, content };
-          noteModelMock.findOneAndUpdate.mockImplementation(async () => doc);
+          noteModelMock.findOneAndUpdate.mockImplementation(async () => ({
+            ...doc,
+            content: newContent,
+          }));
 
           const { body } = await request(app.getHttpServer())
             .put('/notes/' + _id)
             .set('Authorization', 'Bearer ' + token)
-            .send({ content })
+            .send({ content: newContent })
             .expect(HttpStatus.OK);
 
           expect(noteModelMock.findOneAndUpdate).toBeCalledWith(
             { _id, owner },
-            { content },
+            { content: newContent },
+            { returnOriginal: false },
           );
           expect(body._id).toEqual(_id);
           expect(body.owner).toEqual(owner);
           expect(body.accessors).toEqual(accessors);
-          expect(body.content).toEqual(content);
+          expect(body.content).toEqual(newContent);
         });
       });
 
@@ -336,6 +341,7 @@ describe('AppController (e2e)', () => {
           expect(noteModelMock.findOneAndUpdate).toBeCalledWith(
             { owner, _id },
             { accessors: validAccessors },
+            { returnOriginal: false },
           );
           expect(body).toEqual(resultantDoc);
         });

@@ -29,7 +29,11 @@ export class NotesService {
   }
 
   update(userId: string, _id: string, content: string) {
-    return this.noteModel.findOneAndUpdate({ _id, owner: userId }, { content });
+    return this.noteModel.findOneAndUpdate(
+      { _id, owner: userId },
+      { content },
+      { returnOriginal: false },
+    );
   }
 
   remove(userId: string, _id: string) {
@@ -41,6 +45,7 @@ export class NotesService {
     return this.noteModel.findOneAndUpdate(
       { _id, owner: userId },
       { accessors },
+      { returnOriginal: false },
     );
   }
 
